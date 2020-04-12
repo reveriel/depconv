@@ -195,6 +195,8 @@ class SpMiddleFHD(nn.Module):
 
     def forward(self, voxel_features, coors, batch_size):
         # coors[:, 1] += 1
+        print("voxel_features shape: ", voxel_features.shape)
+        print("sparse_shape :", self.sparse_shape)
         coors = coors.int()
         ret = spconv.SparseConvTensor(voxel_features, coors, self.sparse_shape,
                                       batch_size)

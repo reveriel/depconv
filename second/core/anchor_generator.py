@@ -13,7 +13,7 @@ class AnchorGenerator:
     def generate(self, feature_map_size):
         raise NotImplementedError
 
-    @property 
+    @property
     def ndim(self):
         raise NotImplementedError
 
@@ -61,11 +61,11 @@ class AnchorGeneratorStride(AnchorGenerator):
             res = np.concatenate([res, custom], axis=-1)
         return res
 
-    @property 
+    @property
     def ndim(self):
         return 7 + len(self._custom_values)
 
-    @property 
+    @property
     def custom_ndim(self):
         return len(self._custom_values)
 
@@ -100,9 +100,11 @@ class AnchorGeneratorRange(AnchorGenerator):
         return num_rot * num_size
 
     def generate(self, feature_map_size):
+        print("feautres size", feature_map_size)
         res = box_np_ops.create_anchors_3d_range(
             feature_map_size, self._anchor_ranges, self._sizes,
             self._rotations, self._dtype)
+        print("res =", res.shape)
 
         if len(self._custom_values) > 0:
             custom_ndim = len(self._custom_values)
@@ -111,10 +113,10 @@ class AnchorGeneratorRange(AnchorGenerator):
             res = np.concatenate([res, custom], axis=-1)
         return res
 
-    @property 
+    @property
     def ndim(self):
         return 7 + len(self._custom_values)
 
-    @property 
+    @property
     def custom_ndim(self):
         return len(self._custom_values)

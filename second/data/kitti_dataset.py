@@ -111,7 +111,7 @@ class KittiDataset(Dataset):
         detection
         When you want to eval your own dataset, you MUST set correct
         the z axis and box z center.
-        If you want to eval by my KITTI eval function, you must 
+        If you want to eval by my KITTI eval function, you must
         provide the correct format annotations.
         ground_truth_annotations format:
         {
@@ -199,6 +199,7 @@ class KittiDataset(Dataset):
             velo_path.parent.stem + '_reduced') / velo_path.name
         if velo_reduced_path.exists():
             velo_path = velo_reduced_path
+        # print("velo_path ", str(velo_path))
         points = np.fromfile(
             str(velo_path), dtype=np.float32,
             count=-1).reshape([-1, self.NumPointFeatures])

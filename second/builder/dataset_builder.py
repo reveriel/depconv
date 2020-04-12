@@ -65,7 +65,7 @@ def build(input_reader_config,
     grid_size = voxel_generator.grid_size
     feature_map_size = grid_size[:2] // out_size_factor
     feature_map_size = [*feature_map_size, 1][::-1]
-    print("feature_map_size", feature_map_size)
+    # print("feature_map_size", feature_map_size)
     assert all([n != '' for n in target_assigner.classes]), "you must specify class_name in anchor_generators."
     dataset_cls = get_dataset_class(dataset_cfg.dataset_class_name)
     assert dataset_cls.NumPointFeatures >= 3, "you must set this to correct value"
@@ -104,12 +104,13 @@ def build(input_reader_config,
         sample_importance=prep_cfg.sample_importance)
 
     ret = target_assigner.generate_anchors(feature_map_size)
+    # print("build, featmap size =", feature_map_size)
     class_names = target_assigner.classes
     anchors_dict = target_assigner.generate_anchors_dict(feature_map_size)
     anchors_list = []
     for k, v in anchors_dict.items():
         anchors_list.append(v["anchors"])
-    
+
     # anchors = ret["anchors"]
     anchors = np.concatenate(anchors_list, axis=0)
     anchors = anchors.reshape([-1, target_assigner.box_ndim])

@@ -15,8 +15,10 @@ from second.data import kitti_common as kitti
 from second.utils import simplevis
 from second.utils.timer import simple_timer
 
+from second import test_kitti
+
 import seaborn as sns
-import matplotlib.pyplot as plt 
+import matplotlib.pyplot as plt
 
 def merge_second_batch(batch_list):
     example_merged = defaultdict(list)
@@ -84,7 +86,7 @@ def merge_second_batch_multigpu(batch_list):
             continue
         else:
             ret[key] = np.stack(elems, axis=0)
-        
+
     return ret
 
 
@@ -130,7 +132,7 @@ def prep_pointcloud(input_dict,
                     random_flip_y=True,
                     sample_importance=1.0,
                     out_dtype=np.float32):
-    """convert point cloud to voxels, create targets if ground truths 
+    """convert point cloud to voxels, create targets if ground truths
     exists.
 
     input_dict format: dataset.get_sensor_data format
@@ -299,34 +301,52 @@ def prep_pointcloud(input_dict,
     grid_size = voxel_generator.grid_size
     # [352, 400]
     t1 = time.time()
-    if not multi_gpu:
-        res = voxel_generator.generate(
-            points, max_voxels)
-        voxels = res["voxels"]
-        coordinates = res["coordinates"]
-        num_points = res["num_points_per_voxel"]
-        num_voxels = np.array([voxels.shape[0]], dtype=np.int64)
-    else:
-        res = voxel_generator.generate_multi_gpu(
-            points, max_voxels)
-        voxels = res["voxels"]
-        coordinates = res["coordinates"]
-        num_points = res["num_points_per_voxel"]
-        num_voxels = np.array([res["voxel_num"]], dtype=np.int64)
+
+
+    generate_voxels = False
+    if generate_voxels:
+        if not multi_gpu:
+            res = voxel_generator.generate(
+                points, max_voxels)
+            voxels = res["voxels"]
+            coordinates = res["coordinates"]
+            num_points = res["num_points_per_voxel"]
+            num_voxels = np.array([voxels.shape[0]], dtype=np.int64)
+        else:
+            res = voxel_generator.generate_multi_gpu(
+                points, max_voxels)
+            voxels = res["voxels"]
+            coordinates = res["coordinates"]
+            num_points = res["num_points_per_voxel"]
+            num_voxels = np.array([res["voxel_num"]], dtype=np.int64)
+
+    feature = test_kitti.xyz2range_v2(points, plot_diff=False)
+
     metrics["voxel_gene_time"] = time.time() - t1
+
+    # example = {
+    #     'voxels': voxels,
+    #     'num_points': num_points,
+    #     'coordinates': coordinates,
+    #     "num_voxels": num_voxels,
+    #     "metrics": metrics,
+    # }
+
     example = {
-        'voxels': voxels,
-        'num_points': num_points,
-        'coordinates': coordinates,
-        "num_voxels": num_voxels,
         "metrics": metrics,
+        "feature": feature,
     }
+
     if calib is not None:
         example["calib"] = calib
     feature_map_size = grid_size[:2] // out_size_factor
+    # print("gridid_size   =" , grid_size)
+    # print("outsize fac", out_size_factor)
     feature_map_size = [*feature_map_size, 1][::-1]
+    # print("feature_map_size =", feature_map_size)
     if anchor_cache is not None:
         anchors = anchor_cache["anchors"]
+        # print(" tar cache, anchors.shape", anchors.shape)
         anchors_bv = anchor_cache["anchors_bv"]
         anchors_dict = anchor_cache["anchors_dict"]
         matched_thresholds = anchor_cache["matched_thresholds"]
@@ -335,6 +355,7 @@ def prep_pointcloud(input_dict,
     else:
         ret = target_assigner.generate_anchors(feature_map_size)
         anchors = ret["anchors"]
+        # print(" tar ass, anchors.shape", anchors.shape)
         anchors = anchors.reshape([-1, target_assigner.box_ndim])
         anchors_dict = target_assigner.generate_anchors_dict(feature_map_size)
         anchors_bv = box_np_ops.rbbox2d_to_near_bbox(
@@ -344,6 +365,7 @@ def prep_pointcloud(input_dict,
     example["anchors"] = anchors
     anchors_mask = None
     if anchor_area_threshold >= 0:
+        assert False, "no support"
         # slow with high resolution. recommend disable this forever.
         coors = coordinates
         dense_voxel_map = box_np_ops.sparse_sum_for_anchors_mask(
@@ -374,7 +396,7 @@ def prep_pointcloud(input_dict,
             matched_thresholds=matched_thresholds,
             unmatched_thresholds=unmatched_thresholds,
             importance=gt_dict["gt_importance"])
-        
+
         """
         boxes_lidar = gt_dict["gt_boxes"]
         bev_map = simplevis.nuscene_vis(points, boxes_lidar, gt_dict["gt_names"])
@@ -384,7 +406,7 @@ def prep_pointcloud(input_dict,
         bev_map = simplevis.draw_box_in_bev(bev_map, [-50, -50, 3, 50, 50, 1], assigned_anchors, [255, 0, 0])
         cv2.imshow('anchors', bev_map)
         cv2.waitKey(0)
-        
+
         boxes_lidar = gt_dict["gt_boxes"]
         pp_map = np.zeros(grid_size[:2], dtype=np.float32)
         voxels_max = np.max(voxels[:, :, 2], axis=1, keepdims=False)

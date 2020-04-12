@@ -5,7 +5,7 @@ from pathlib import Path
 import pickle
 import shutil
 import time
-import re 
+import re
 import fire
 import numpy as np
 import torch
@@ -84,10 +84,10 @@ def freeze_params(params: dict, include: str=None, exclude: str=None):
     for k, p in params.items():
         if include_re is not None:
             if include_re.match(k) is not None:
-                continue 
+                continue
         if exclude_re is not None:
             if exclude_re.match(k) is None:
-                continue 
+                continue
         remain_params.append(p)
     return remain_params
 
@@ -122,7 +122,7 @@ def filter_param_dict(state_dict: dict, include: str=None, exclude: str=None):
                 continue
         if exclude_re is not None:
             if exclude_re.match(k) is not None:
-                continue 
+                continue
         res_dict[k] = p
     return res_dict
 
@@ -144,7 +144,7 @@ def train(config_path,
     """train a VoxelNet model specified by a config file.
     """
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
+
     model_dir = str(Path(model_dir).resolve())
     if create_folder:
         if Path(model_dir).exists():
@@ -191,11 +191,11 @@ def train(config_path,
         new_pretrained_dict = {}
         for k, v in pretrained_dict.items():
             if k in model_dict and v.shape == model_dict[k].shape:
-                new_pretrained_dict[k] = v        
+                new_pretrained_dict[k] = v
         print("Load pretrained parameters:")
         for k, v in new_pretrained_dict.items():
             print(k, v.shape)
-        model_dict.update(new_pretrained_dict) 
+        model_dict.update(new_pretrained_dict)
         net.load_state_dict(model_dict)
         freeze_params_v2(dict(net.named_parameters()), freeze_include, freeze_exclude)
         net.clear_global_step()
@@ -312,7 +312,7 @@ def train(config_path,
                 cls_neg_loss = ret_dict["cls_neg_loss"].mean()
                 loc_loss = ret_dict["loc_loss"]
                 cls_loss = ret_dict["cls_loss"]
-                
+
                 cared = ret_dict["cared"]
                 labels = example_torch["labels"]
                 if train_cfg.enable_mixed_precision:
@@ -367,7 +367,7 @@ def train(config_path,
                             dir_loss_reduced.detach().cpu().numpy())
 
                     metrics["misc"] = {
-                        "num_vox": int(example_torch["voxels"].shape[0]),
+                        # "num_vox": int(example_torch["voxels"].shape[0]),
                         "num_pos": int(num_pos),
                         "num_neg": int(num_neg),
                         "num_anchors": int(num_anchors),
@@ -512,11 +512,14 @@ def evaluate(config_path,
     t2 = time.time()
 
     for example in iter(eval_dataloader):
+        # print(example)
+        return
         if measure_time:
             prep_times.append(time.time() - t2)
             torch.cuda.synchronize()
             t1 = time.time()
         example = example_convert_to_torch(example, float_dtype)
+
         if measure_time:
             torch.cuda.synchronize()
             prep_example_times.append(time.time() - t1)
@@ -525,6 +528,7 @@ def evaluate(config_path,
         bar.print_bar()
         if measure_time:
             t2 = time.time()
+
 
     sec_per_example = len(eval_dataset) / (time.time() - t)
     print(f'generate label finished({sec_per_example:.2f}/s). start eval:')
@@ -546,7 +550,7 @@ def evaluate(config_path,
 
 def helper_tune_target_assigner(config_path, target_rate=None, update_freq=200, update_delta=0.01, num_tune_epoch=5):
     """get information of target assign to tune thresholds in anchor generator.
-    """    
+    """
     if isinstance(config_path, str):
         # directly provide a config object. this usually used
         # when you want to train with several different parameters in
@@ -588,7 +592,7 @@ def helper_tune_target_assigner(config_path, target_rate=None, update_freq=200, 
         collate_fn=merge_second_batch,
         worker_init_fn=_worker_init_fn,
         drop_last=False)
-    
+
     class_count = {}
     anchor_count = {}
     class_count_tune = {}
@@ -609,7 +613,7 @@ def helper_tune_target_assigner(config_path, target_rate=None, update_freq=200, 
             gt_names = example["gt_names"]
             for name in gt_names:
                 class_count_tune[name] += 1
-            
+
             labels = example['labels']
             for i in range(1, len(classes) + 1):
                 anchor_count_tune[classes[i - 1]] += int(np.sum(labels == i))
@@ -640,7 +644,7 @@ def helper_tune_target_assigner(config_path, target_rate=None, update_freq=200, 
 
         for name in gt_names:
             class_count[name] += 1
-        
+
         labels = example['labels']
         for i in range(1, len(classes) + 1):
             anchor_count[classes[i - 1]] += int(np.sum(labels == i))
