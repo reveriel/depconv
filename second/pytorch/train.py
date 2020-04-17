@@ -26,6 +26,8 @@ import psutil
 
 def example_convert_to_torch(example, dtype=torch.float32,
                              device=None) -> dict:
+    """ convert data from numpy to torch
+    """
     device = device or torch.device("cuda:0")
     example_torch = {}
     float_names = [
@@ -56,6 +58,10 @@ def example_convert_to_torch(example, dtype=torch.float32,
 
 
 def build_network(model_cfg, measure_time=False):
+    """
+    build voxel generator, box codder, target assigner
+        and network, from model cfg
+    """
     voxel_generator = voxel_builder.build(model_cfg.voxel_generator)
     bv_range = voxel_generator.point_cloud_range[[0, 1, 3, 4]]
     box_coder = box_coder_builder.build(model_cfg.box_coder)
@@ -73,6 +79,9 @@ def _worker_init_fn(worker_id):
     print(f"WORKER {worker_id} seed:", np.random.get_state()[1][0])
 
 def freeze_params(params: dict, include: str=None, exclude: str=None):
+    """ filter params by include and exclude regexp,
+        return filtered params
+    """
     assert isinstance(params, dict)
     include_re = None
     if include is not None:
@@ -92,6 +101,9 @@ def freeze_params(params: dict, include: str=None, exclude: str=None):
     return remain_params
 
 def freeze_params_v2(params: dict, include: str=None, exclude: str=None):
+    """ filter params by include and exclude regexp
+        freeze it
+    """
     assert isinstance(params, dict)
     include_re = None
     if include is not None:
@@ -108,6 +120,9 @@ def freeze_params_v2(params: dict, include: str=None, exclude: str=None):
                 p.requires_grad = False
 
 def filter_param_dict(state_dict: dict, include: str=None, exclude: str=None):
+    """
+    filter param dict by include and exclude regexp
+    """
     assert isinstance(state_dict, dict)
     include_re = None
     if include is not None:
@@ -145,6 +160,7 @@ def train(config_path,
     """
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+    # create dir for saving training states
     model_dir = str(Path(model_dir).resolve())
     if create_folder:
         if Path(model_dir).exists():
@@ -155,6 +171,7 @@ def train(config_path,
     model_dir.mkdir(parents=True, exist_ok=True)
     if result_path is None:
         result_path = model_dir / 'results'
+    # loadd config file
     config_file_bkp = "pipeline.config"
     if isinstance(config_path, str):
         # directly provide a config object. this usually used
@@ -185,6 +202,7 @@ def train(config_path,
     print("num parameters:", len(list(net.parameters())))
     torchplus.train.try_restore_latest_checkpoints(model_dir, [net])
     if pretrained_path is not None:
+        ## load  pretrained params
         model_dict = net.state_dict()
         pretrained_dict = torch.load(pretrained_path)
         pretrained_dict = filter_param_dict(pretrained_dict, pretrained_include, pretrained_exclude)
@@ -512,14 +530,11 @@ def evaluate(config_path,
     t2 = time.time()
 
     for example in iter(eval_dataloader):
-        # print(example)
-        return
         if measure_time:
             prep_times.append(time.time() - t2)
             torch.cuda.synchronize()
             t1 = time.time()
         example = example_convert_to_torch(example, float_dtype)
-
         if measure_time:
             torch.cuda.synchronize()
             prep_example_times.append(time.time() - t1)
@@ -528,7 +543,6 @@ def evaluate(config_path,
         bar.print_bar()
         if measure_time:
             t2 = time.time()
-
 
     sec_per_example = len(eval_dataset) / (time.time() - t)
     print(f'generate label finished({sec_per_example:.2f}/s). start eval:')

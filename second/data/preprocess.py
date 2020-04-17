@@ -254,15 +254,15 @@ def prep_pointcloud(input_dict,
         if "group_ids" in gt_dict:
             group_ids = gt_dict["group_ids"]
 
-        prep.noise_per_object_v3_(
-            gt_dict["gt_boxes"],
-            points,
-            gt_boxes_mask,
-            rotation_perturb=gt_rotation_noise,
-            center_noise_std=gt_loc_noise_std,
-            global_random_rot_range=global_random_rot_range,
-            group_ids=group_ids,
-            num_try=100)
+        # prep.noise_per_object_v3_(
+        #     gt_dict["gt_boxes"],
+        #     points,
+        #     gt_boxes_mask,
+        #     rotation_perturb=gt_rotation_noise,
+        #     center_noise_std=gt_loc_noise_std,
+        #     global_random_rot_range=global_random_rot_range,
+        #     group_ids=group_ids,
+        #     num_try=100)
 
         # should remove unrelated objects after noise per object
         # for k, v in gt_dict.items():

@@ -7,6 +7,7 @@ import imageio
 import torch
 import torch.nn.functional as F
 from torch import nn
+from typing import Dict, List, Tuple, Union
 
 # from test_utils import params_grid, generate_sparse_data, TestCase
 import unittest
@@ -23,10 +24,28 @@ fig_path = "output/"
 # the resolution of the LiDAR is 0.09 dgree for 5Hz. At 10Hz, the resolution is around 0.1728 degree.
 # Ideally, W comes out to be 520
 
+class DepImage:
+    def __init__(self, feature, depth, thickness=1):
+        self.feature = feature
+        self.depth = depth
+        self.thickness = thickness
+
+def save_depth_jpg(depth, name:str):
+    """
+    save depth map to image file
+    depth : tensor of shape (H, W)
+    """
+    depth = depth.cpu().numpy()
+    gray = np.interp(depth, (depth.min(), depth.max()), (50,255))
+    H, W = depth.shape
+    imageio.imwrite(fig_path + name, gray.astype(np.uint8))
+
 def xyz2range(points):
+    """ convert points to depth map
+        devide evenly, not wokring very well
+    """
     shape = points.shape
     print("shape = ", shape)
-
     x = points[:, 0]  # -71~73
     y = points[:, 1]  # -21~53
     z = points[:, 2]  # -5~2.6
@@ -37,31 +56,23 @@ def xyz2range(points):
     distance[distance == 0] = 1e-6
     thetas = np.arcsin(z / distance)
     phis = np.arcsin(-y / np.sqrt(x2y2))
-
     # print("min thetas = ", np.min(thetas))
     # print("max theats = ", np.max(thetas))
     # print("min phis = ", np.min(phis))
     # print("max phis = ", np.max(phis))
-
     # delta_phi = np.radians(90./512.)
     delta_phi = (np.max(phis) - np.min(phis)) / 511.
-
     # veldyne , resolution 26.8  vertical,
     # delta_theta = np.radians(26.8/64)
     delta_theta = (np.max(thetas) - np.min(thetas)) / 64.
-
     theta_idx = ((thetas - np.min(thetas)) / delta_theta).astype(int)
     phi_idx = ((phis - np.min(phis)) / delta_phi).astype(int)
-
-
     print("theta_idx = ", theta_idx)
     print("phi_idx = ", phi_idx)
-
     reflect_gray = (intensity * 255).astype(int)
     print("reflect_gray = ", reflect_gray)
     distance_gray = np.interp(distance, (distance.min(), distance.max()),
                              (50,255))
-
     H = 64
     W = 512
     C = 1
@@ -70,22 +81,21 @@ def xyz2range(points):
     return range_map
 
 def xyz2range_v2(points, ith=0, plot_diff=False, visualize=False):
+    """
+    """
     v_res=26.9/64,
     h_res=90./512.
-
     x = points[:, 0]  # -71~73
     y = points[:, 1]  # -21~53
     z = points[:, 2]  # -5~2.6
     intensity = points[:, 3]  # 0~1
     x2y2 = np.sqrt(np.square(x) + np.square(y))
     distance = np.sqrt(x2y2 + np.square(z))
-
     # phi
     # arctan2 , and arcsin, almost the same result
     phi = np.arctan2(-y, x)
     # phi_p = np.arcsin(-y / np.sqrt(x ** 2 + y ** 2 ))
     # print("x rad diff", phi, phi_p, np.sum(phi - phi_p))
-
     angle_diff = np.diff(phi)
     if plot_diff:
         plt.plot(np.diff(phi))
@@ -98,23 +108,19 @@ def xyz2range_v2(points, ith=0, plot_diff=False, visualize=False):
     theta_idx = np.cumsum(angle_diff_mask)
     theta_idx[theta_idx >= 64] = 63
     # print("theta max min", theta_idx.max(), theta_idx.min())
-
     delta_phi = np.radians(90./512.)
     # delta_phi = np.radians((x.max() - x.min()) / 500.) # doenst work. many missing dots horiizontally
     phi_idx = np.floor((phi / delta_phi)).astype(int)
     phi_idx -= np.min(phi_idx) # translate to positive
     phi_idx[phi_idx >= 512] = 511
-
     # x_max = int(360.0 / h_res) #+ 1  # 投影后图片的宽度
     x_max = 512
-
     if visualize:
         depth_gray = np.interp(distance, (distance.min(), distance.max()), (20,255))
         depth_image = np.zeros((64, 512, 1))
         depth_image[theta_idx, phi_idx, 0] = depth_gray
         imageio.imwrite(fig_path + 'range_map_v2_{:d}.jpg'.format(ith),
             depth_image.astype(np.uint8))
-
     # 可能有 data loss， 有些数据点被覆盖了。
     depth_map = np.zeros((5, 64, 512), dtype=float) #+255
     depth_map[0, theta_idx, phi_idx] = x
@@ -122,36 +128,28 @@ def xyz2range_v2(points, ith=0, plot_diff=False, visualize=False):
     depth_map[2, theta_idx, phi_idx] = z
     depth_map[3, theta_idx, phi_idx] = distance
     depth_map[4, theta_idx, phi_idx] = intensity
-
     return depth_map
 
 def test_xyz2range_v2():
-    kitti_info_path= "/kitti/kitti_infos_val.pkl"
-    kitti_root_path= "/kitti/"
+    kitti_info_path= "/home/gx/GitHub/second.pytorch/dataset/kitti_infos_val.pkl"
+    kitti_root_path= "/home/gx/GitHub/second.pytorch/dataset/"
     fig_path = "output/"
 
     dataset = KittiDataset(kitti_root_path, kitti_info_path)
-
     for i in range(0,len(dataset)) :
         # break
         if i == 20:
             break
-
         item = dataset.get_sensor_data(i+8)
         # print(input_dict)
         points = item['lidar']['points']
         range_map = xyz2range(points)
         imageio.imwrite(fig_path + 'range_map_{:d}.jpg'.format(i),
             range_map.astype(np.uint8))
-
         range_map = xyz2range_v2(points, i, visualize=True)
         print("range map shape, ", range_map.shape)
-
         # 换个方式，根据 np.diff  把点填到不同的行。
-
         # 或者，用 max pooling ?
-
-
         # if i == 2:
         #     # plt.plot(ys, zs) #     fig, ax = plt.subplots() #     NPOINTS = len(ys)
         #     MAP='viridis'
@@ -162,8 +160,8 @@ def test_xyz2range_v2():
         #     plt.xlabel('y')
         #     plt.ylabel('z')
         #     plt.savefig('yz.png')
-
         if False:
+            # plot all dots
             fig, ax = plt.subplots()
             NPOINTS = len(thetas)
             MAP='viridis'
@@ -175,8 +173,6 @@ def test_xyz2range_v2():
             plt.xlabel('phi')
             plt.ylabel('theta')
             plt.savefig(fig_path + 'phi-theta-{:d}.jpg'.format(i), dpi=300)
-
-
         # if i == 2:
         #     BINS= 4000
         #     fig, ax = plt.subplots()
@@ -184,13 +180,11 @@ def test_xyz2range_v2():
         #     ax.set_xlabel("points")
         #     ax.set_ylabel("thetas accumulate")
         #     plt.savefig(fig_path + 'thetas-hist.jpg', dpi=300)
-
         #     fig, ax = plt.subplots()
         #     ax.hist(phis, BINS,cumulative=True )
         #     ax.set_xlabel("points")
         #     ax.set_ylabel("phis accumulate")
         #     plt.savefig(fig_path + 'phis-hist.jpg', dpi=300)
-
                 # in_channels,
                 # out_channels,
                 # kernel_size,
@@ -198,9 +192,7 @@ def test_xyz2range_v2():
                 # paddding=0,
                 # dilatoin=1,
                 # groups=1,
-
         # Depth convolution
-
 
 def _calculate_fan_in_and_fan_out_hwio(tensor):
     dimensions = tensor.ndimension()
@@ -256,7 +248,8 @@ class DepConv3D(nn.Module):
         if bias:
             self.bias = nn.Parameter(torch.Tensor(out_channels))
         else:
-            self.register_parameter('bias', None)
+            # self.register_parameter('bias', None)
+            self.bias = torch.empty(0)
         self.reset_parameters()
 
     def reset_parameters(self):
@@ -287,6 +280,125 @@ def init_depth_from_feature(feature, k):
     depth = ((distance - distance.min()) * k / (distance.max()- distance.min())).long()
     return depth
 
+class ConvNet(nn.Module):
+    def __init__(self,
+        num_input_features,
+        use_norm=True):
+        super(ConvNet, self).__init__()
+        if use_norm:
+            BatchNorm2d = change_default_args(
+                eps=1e-3, momentum=0.01)(nn.BatchNorm2d)
+            BatchNorm1d = change_default_args(
+                eps=1e-3, momentum=0.01)(nn.BatchNorm1d)
+            Conv2d = change_default_args(bias=False)(nn.Conv2d)
+        else:
+            BatchNorm2d = Empty
+            BatchNorm1d = Empty
+            Conv2d = change_default_args(bias=True)(nn.Conv2d)
+
+        # 128 * 64 * 512
+        self.conv1 = nn.Conv2d(num_input_features, 8, 3, padding=1)
+        self.bn1 = BatchNorm2d(8)
+        self.conv2 = nn.Conv2d(8, 8, 3, padding=1)
+        self.bn2 = BatchNorm2d(8)
+        self.conv3 = nn.Conv2d(8, 16, 3, (1,2), padding=1) # 128 * 64 * 256
+        self.bn3 = BatchNorm2d(16)
+        self.conv4 = nn.Conv2d(16, 16, 3, padding=1)
+        self.bn4 = BatchNorm2d(16)
+        self.conv5 = nn.Conv2d(16, 32, 3, 2, padding=1) # 64,32,128
+        self.bn5 = BatchNorm2d(32)
+        # self.conv6 = nn.Conv2d(32, 32, 3, padding=1)
+        # self.bn6 = BatchNorm2d(32)
+        # self.conv7 = nn.Conv2d(32, 32, 3, padding=1)
+        # self.bn7 = BatchNorm2d(32)
+        self.conv8 = nn.Conv2d(32, 32, 3, padding=1)
+        self.bn8 = BatchNorm2d(32)
+        self.conv9 = nn.Conv2d(32, 64, 3, (1,2), padding=1) # 32, 32 * 64
+        self.bn9 = BatchNorm2d(64)
+        # self.conv10 = nn.Conv2d(32, 32, 3,padding=1)
+        # self.bn10 = BatchNorm2d(32)
+        self.conv11 = nn.Conv2d(64, 64, 3, (1,1), padding=1)# 16
+        self.bn11 = BatchNorm2d(64)
+        self.conv12 = nn.Conv2d(64, 128, 3, (1,1), padding=1) # 8 * 32 * 64
+        self.bn12 = BatchNorm2d(128)
+        self.conv13 = nn.Conv2d(128, 256, 3, (1,1), padding=1) # 4
+        self.bn13 = BatchNorm2d(256)
+        # self.conv14 = nn.Conv2d(32, 32, 3, (2,1,1), padding=1) # 2
+        # self.bn14 = BatchNorm2d(32)
+
+        self.count = 0
+
+    def forward(self, feature):
+
+        depth = init_depth_from_feature(feature, 128)
+        # with torch.no_grad():
+        #     print("depth.shape, depth.shape")
+        #     print("depth,", depth[0])
+        #     save_depth_jpg(depth[0], "{:2d}.jpg".format(self.count))
+        # self.count += 1
+
+        # print("depth =", depth)
+        # print("depth min, max, shape", depth.min(), depth.max(), depth.shape)
+        # print("feature shape ", feature.shape)
+        # print("depth =", depth)
+        # print("depth min, max, shape", depth.min(), depth.max(), depth.shape)
+        # print("feature shape ", feature.shape)
+
+        x = self.conv1(feature)
+        x = self.bn1(x)
+        x = F.relu(x)
+        x = self.conv2(x)
+        x = self.bn2(x)
+        x = F.relu(x)
+        x = self.conv3(x)
+        # depth = F.max_pool2d(depth.float(), 3, padding=1, stride=(1,2)).long()
+        x = self.bn3(x)
+        x = F.relu(x)
+        x = self.conv4(x)
+        x = self.bn4(x)
+        x = F.relu(x)
+        x = self.conv5(x)
+        # depth = F.max_pool2d(depth.float(), 3, padding=1, stride=(2,2)).long()
+        # depth = depth // 2
+        x = self.bn5(x)
+        x = F.relu(x)
+        # x = self.conv6(x)
+        # x = self.bn6(x)
+        # x = F.relu(x)
+        # x = self.conv7(x)
+        # x = self.bn7(x)
+        # x = F.relu(x)
+        x = self.conv8(x)
+        x = self.bn8(x)
+        x = F.relu(x)
+        x = self.conv9(x)
+        # depth = F.max_pool2d(depth.float(), 3, padding=1, stride=(1,2)).long()
+        # depth = depth // 2
+        x = self.bn9(x)
+        x = F.relu(x)
+        # x = self.conv10(x)
+        # x = self.bn10(x)
+        # x = F.relu(x)
+        x = self.conv11(x)
+        # depth = depth // 2
+        x = self.bn11(x)
+        x = F.relu(x)
+        x = self.conv12(x)
+        # depth = depth // 2
+        x = self.bn12(x)
+        x = F.relu(x)
+        x = self.conv13(x)
+        # depth = depth // 2
+        x = self.bn13(x)
+        x = F.relu(x)
+        # x = self.conv14(x)
+        # depth = depth // 2
+        # x = self.bn14(x)
+        # x = F.relu(x)
+
+        return x
+
+
 class DepConvNet(nn.Module):
     def __init__(self,
         num_input_features,
@@ -310,20 +422,20 @@ class DepConvNet(nn.Module):
         self.bn2 = BatchNorm2d(8)
         self.conv3 = DepConv3D(8, 16, 3, (1,1,2), padding=1) # 128 * 64 * 256
         self.bn3 = BatchNorm2d(16)
-        self.conv4 = DepConv3D(16, 16, 3, padding=1)
-        self.bn4 = BatchNorm2d(16)
+        # self.conv4 = DepConv3D(16, 16, 3, padding=1)
+        # self.bn4 = BatchNorm2d(16)
         self.conv5 = DepConv3D(16, 32, 3, 2, padding=1) # 64,32,128
         self.bn5 = BatchNorm2d(32)
         # self.conv6 = DepConv3D(32, 32, 3, padding=1)
         # self.bn6 = BatchNorm2d(32)
         # self.conv7 = DepConv3D(32, 32, 3, padding=1)
         # self.bn7 = BatchNorm2d(32)
-        self.conv8 = DepConv3D(32, 32, 3, padding=1)
-        self.bn8 = BatchNorm2d(32)
+        # self.conv8 = DepConv3D(32, 32, 3, padding=1)
+        # self.bn8 = BatchNorm2d(32)
         self.conv9 = DepConv3D(32, 32, 3, (2,1,2), padding=1) # 32, 32 * 64
         self.bn9 = BatchNorm2d(32)
-        self.conv10 = DepConv3D(32, 32, 3,padding=1)
-        self.bn10 = BatchNorm2d(32)
+        # self.conv10 = DepConv3D(32, 32, 3,padding=1)
+        # self.bn10 = BatchNorm2d(32)
         self.conv11 = DepConv3D(32, 32, 3, (2,1,1), padding=1)# 16
         self.bn11 = BatchNorm2d(32)
         self.conv12 = DepConv3D(32, 32, 3, (2,1,1), padding=1) # 8 * 32 * 64
@@ -333,8 +445,20 @@ class DepConvNet(nn.Module):
         # self.conv14 = DepConv3D(32, 32, 3, (2,1,1), padding=1) # 2
         # self.bn14 = BatchNorm2d(32)
 
+        self.count = 0
+
     def forward(self, feature):
-        depth = init_depth_from_feature(feature, 128).cuda()
+
+        depth = init_depth_from_feature(feature, 128)
+        # with torch.no_grad():
+        #     print("depth.shape, depth.shape")
+        #     print("depth,", depth[0])
+        #     save_depth_jpg(depth[0], "{:2d}.jpg".format(self.count))
+        # self.count += 1
+
+        # print("depth =", depth)
+        # print("depth min, max, shape", depth.min(), depth.max(), depth.shape)
+        # print("feature shape ", feature.shape)
         # print("depth =", depth)
         # print("depth min, max, shape", depth.min(), depth.max(), depth.shape)
         # print("feature shape ", feature.shape)
@@ -349,9 +473,9 @@ class DepConvNet(nn.Module):
         depth = F.max_pool2d(depth.float(), 3, padding=1, stride=(1,2)).long()
         x = self.bn3(x)
         x = F.relu(x)
-        x = self.conv4(x, depth)
-        x = self.bn4(x)
-        x = F.relu(x)
+        # x = self.conv4(x, depth)
+        # x = self.bn4(x)
+        # x = F.relu(x)
         x = self.conv5(x, depth)
         depth = F.max_pool2d(depth.float(), 3, padding=1, stride=(2,2)).long()
         depth = depth // 2
@@ -363,17 +487,17 @@ class DepConvNet(nn.Module):
         # x = self.conv7(x, depth)
         # x = self.bn7(x)
         # x = F.relu(x)
-        x = self.conv8(x, depth)
-        x = self.bn8(x)
-        x = F.relu(x)
+        # x = self.conv8(x, depth)
+        # x = self.bn8(x)
+        # x = F.relu(x)
         x = self.conv9(x, depth)
         depth = F.max_pool2d(depth.float(), 3, padding=1, stride=(1,2)).long()
         depth = depth // 2
         x = self.bn9(x)
         x = F.relu(x)
-        x = self.conv10(x, depth)
-        x = self.bn10(x)
-        x = F.relu(x)
+        # x = self.conv10(x, depth)
+        # x = self.bn10(x)
+        # x = F.relu(x)
         x = self.conv11(x, depth)
         depth = depth // 2
         x = self.bn11(x)
@@ -393,12 +517,139 @@ class DepConvNet(nn.Module):
 
         return x
 
+
+class DepConvNet2(nn.Module):
+    def __init__(self,
+        num_input_features,
+        use_norm=True):
+        super(DepConvNet2, self).__init__()
+        if use_norm:
+            BatchNorm2d = change_default_args(
+                eps=1e-3, momentum=0.01)(nn.BatchNorm2d)
+            BatchNorm1d = change_default_args(
+                eps=1e-3, momentum=0.01)(nn.BatchNorm1d)
+            Conv2d = change_default_args(bias=False)(nn.Conv2d)
+        else:
+            BatchNorm2d = Empty
+            BatchNorm1d = Empty
+            Conv2d = change_default_args(bias=True)(nn.Conv2d)
+
+        # 512 * 64 * 512
+        self.conv1 = DepConv3D(num_input_features, 8, 3, padding=1)
+        self.bn1 = BatchNorm2d(8)
+        self.conv2 = DepConv3D(8, 8, 3, padding=1)
+        self.bn2 = BatchNorm2d(8)
+        self.conv3 = DepConv3D(8, 16, 3, (1,1,2), padding=1) # 512 * 64 * 256
+        self.bn3 = BatchNorm2d(16)
+        self.conv4 = DepConv3D(16, 16, 3, padding=1)
+        self.bn4 = BatchNorm2d(16)
+        self.conv16 = DepConv3D(16, 16, 3, padding=1)
+        self.bn16 = BatchNorm2d(16)
+        self.conv5 = DepConv3D(16, 32, 3, 2, padding=1) # 256 * 32 * 128
+        self.bn5 = BatchNorm2d(32)
+        # self.conv6 = DepConv3D(32, 32, 3, padding=1)
+        # self.bn6 = BatchNorm2d(32)
+        # self.conv7 = DepConv3D(32, 32, 3, padding=1)
+        # self.bn7 = BatchNorm2d(32)
+        # self.conv8 = DepConv3D(32, 32, 3, padding=1)
+        # self.bn8 = BatchNorm2d(32)
+        self.conv9 = DepConv3D(32, 32, 3, (2,1,2), padding=1) # 128, 32, 64
+        self.bn9 = BatchNorm2d(32)
+        self.conv10 = DepConv3D(32, 32, 3, padding=1)
+        self.bn10 = BatchNorm2d(32)
+        self.conv11 = DepConv3D(32, 32, 3, (2,2,1), padding=1)# 64, 16, 64
+        self.bn11 = BatchNorm2d(32)
+        # self.conv12 = DepConv3D(32, 32, 3, (2,1,1), padding=1) # 8 * 32 * 64
+        # self.bn12 = BatchNorm2d(32)
+        # self.conv13 = DepConv3D(32, 32, 3, (2,1,1), padding=1) # 4
+        # self.bn13 = BatchNorm2d(32)
+        # self.conv14 = DepConv3D(32, 32, 3, (2,1,1), padding=1) # 2
+        # self.bn14 = BatchNorm2d(32)
+
+        self.count = 0
+
+    def forward(self, feature):
+
+        depth = init_depth_from_feature(feature, 512)
+        # with torch.no_grad():
+        #     print("depth.shape, depth.shape")
+        #     print("depth,", depth[0])
+        #     save_depth_jpg(depth[0], "{:2d}.jpg".format(self.count))
+        # self.count += 1
+
+        # print("depth =", depth)
+        # print("depth min, max, shape", depth.min(), depth.max(), depth.shape)
+        # print("feature shape ", feature.shape)
+        # print("depth =", depth)
+        # print("depth min, max, shape", depth.min(), depth.max(), depth.shape)
+        # print("feature shape ", feature.shape)
+        x = self.conv1(feature, depth)
+        x = self.bn1(x)
+        x = F.relu(x)
+        x = self.conv2(x, depth)
+        x = self.bn2(x)
+        x = F.relu(x)
+        x = self.conv3(x, depth)
+        depth = F.max_pool2d(depth.float(), 3, padding=1, stride=(1,2)).long()
+        x = self.bn3(x)
+        x = F.relu(x)
+        x = self.conv4(x, depth)
+        x = self.bn4(x)
+        x = F.relu(x)
+        x = self.conv16(x, depth)
+        x = self.bn16(x)
+        x = F.relu(x)
+        x = self.conv5(x, depth)
+        depth = F.max_pool2d(depth.float(), 3, padding=1, stride=(2,2)).long()
+        depth = depth // 2
+        x = self.bn5(x)
+        x = F.relu(x)
+        # x = self.conv6(x, depth)
+        # x = self.bn6(x)
+        # x = F.relu(x)
+        # x = self.conv7(x, depth)
+        # x = self.bn7(x)
+        # x = F.relu(x)
+        # x = self.conv8(x, depth)
+        # x = self.bn8(x)
+        # x = F.relu(x)
+        x = self.conv9(x, depth)
+        depth = F.max_pool2d(depth.float(), 3, padding=1, stride=(1,2)).long()
+        depth = depth // 2
+        x = self.bn9(x)
+        x = F.relu(x)
+        # x = self.conv10(x, depth)
+        # x = self.bn10(x)
+        # x = F.relu(x)
+        x = self.conv11(x, depth)
+        depth = F.max_pool2d(depth.float(), 3, padding=1, stride=(2,1)).long()
+        depth = depth // 2
+        x = self.bn11(x)
+        x = F.relu(x)
+        # x = self.conv12(x, depth)
+        # depth = depth // 2
+        # x = self.bn12(x)
+        # x = F.relu(x)
+        # x = self.conv13(x, depth)
+        # depth = depth // 2
+        # x = self.bn13(x)
+        # x = F.relu(x)
+        # x = self.conv14(x, depth)
+        # depth = depth // 2
+        # x = self.bn14(x)
+        # x = F.relu(x)
+        x = depth_to_3D(x, depth, 64)
+        B, C, D, H, W = x.shape
+        # print("shape , ", B,C,D,H,W)
+        return x.permute(0,1,3,2,4).reshape(B, C*H, D, W)
+
 def depconv3d(input, depth, weight,
-        bias=None,
+        bias=torch.tensor([]),
         stride=1,
         padding=0,
         dilation=1,
-        groups=1):
+        groups=1
+        ):
     """
     Applies a 3D convolution on 2D input with depth info.
 
@@ -436,7 +687,6 @@ def depconv3d(input, depth, weight,
     assert depth.dim() == 3
     assert weight.dim() == 5
 
-
     if not isinstance(stride, (list, tuple)):
         stride = [stride] * 3
     if not isinstance(padding, (list, tuple)):
@@ -444,6 +694,16 @@ def depconv3d(input, depth, weight,
     if not isinstance(dilation, (list, tuple)):
         dilation = [dilation] * 3
 
+    return depconv3d_(input, depth, weight,
+        bias, stride, padding, dilation, groups)
+
+@torch.jit.script
+def depconv3d_(input, depth, weight,
+        bias:torch.Tensor,
+        stride:List[int],
+        padding:List[int],
+        dilation:List[int],
+        groups:int):
 
     B, iC, iH, iW = input.shape
     oC, iC, kD, kH, kW = weight.shape
@@ -466,8 +726,7 @@ def depconv3d(input, depth, weight,
     N = unfolded_depth.size(-1)
 
     # extend weight with zeros, for indexing out of range values
-    ext_weight = torch.cat((weight, torch.zeros(oC, iC, 1, kH, kW,
-                            device=weight.get_device())), dim=2)
+    ext_weight = torch.cat((weight, torch.zeros([oC, iC, 1, kH, kW], device=torch.device('cuda'))), dim=2)
         # oC, iC, kD+1, kH, kW
 
     # depth difference
@@ -475,7 +734,10 @@ def depconv3d(input, depth, weight,
     # B, kH * kW * 1, N
 
     # in range
-    depth_diff[(depth_diff < -1) | (depth_diff > 1)] = 2
+    mask_diff_low = depth_diff.lt(-1)
+    mask_diff_high = depth_diff.ge(1)
+    depth_diff[mask_diff_low] = torch.tensor(2)
+    depth_diff[mask_diff_high] = torch.tensor(2)
     depth_index = depth_diff.add(1).unsqueeze(1) # B, kH*kW*1 , N
 
     depth_index = depth_index.reshape(B, 1, 1, 1, kH *kW, N).expand(-1, oC, iC, -1, -1, -1) # B, oC, iC, 1, kH*kW, N
@@ -488,8 +750,8 @@ def depconv3d(input, depth, weight,
     # print("enisum shape ", unfolded_weight.shape, unfolded_input.shape)
     unfolded_output = torch.einsum('bikj,bkj->bij', unfolded_weight, unfolded_input)
     # B, oC, N
-    oH = int(np.floor((iH + 2 * padH - dH * (kH - 1) -1) / sH + 1))
-    oW = int(np.floor((iW + 2 * padW - dW * (kW - 1) -1) / sW + 1))
+    oH = int(torch.floor((iH + 2 * padH - dH * (kH - 1) -1) / sH + 1))
+    oW = int(torch.floor((iW + 2 * padW - dW * (kW - 1) -1) / sW + 1))
     #
     output = F.fold(unfolded_output, output_size=(oH, oW), kernel_size=(1,1)) # B, oC, oH, oW
 
@@ -505,7 +767,7 @@ def depconv3d(input, depth, weight,
 
 
 
-def depth_to_3D(feature, depth):
+def depth_to_3D(feature, depth, D=0):
     """
     convert (depth, feature) to a 3D tensor
 
@@ -520,13 +782,15 @@ def depth_to_3D(feature, depth):
     #      raise ValueError("'depth' should be of type LongTensor,"
     #         " but got %s" % type(depth))
 
-    D_min, D_max = depth.min(), depth.max()
-    D = D_max - D_min + 1
+    if D == 0:
+        D_min, D_max = depth.min(), depth.max()
+        D = D_max - D_min + 1
     B, C, H, W = feature.shape
     device = feature.get_device()
     ret_tensor = torch.zeros(B, C, D, H, W, device=device)
     feature_ = feature.reshape(B, C, 1, H, W).expand_as(ret_tensor)
     depth_idx = depth.reshape(B, 1, 1, H, W).expand_as(ret_tensor)
+    depth_idx[depth_idx >= D]  = D - 1
     # expand to shape, B, C, D, H, W
     ret_tensor.scatter_(2, depth_idx, feature_)
     return ret_tensor
@@ -640,4 +904,4 @@ def testDConv():
 
 # test_submanifold_conv3d()
 
-test_xyz2range_v2()
+# test_xyz2range_v2()
