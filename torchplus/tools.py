@@ -38,8 +38,8 @@ def change_default_args(**kwargs):
                 for key, val in kwargs.items():
                     if key not in kw and kw_to_pos[key] > len(args):
                         kw[key] = val
+                self.__class__.__name__ = str(layer_class.__name__)
                 super().__init__(*args, **kw)
-
         return DefaultArgLayer
 
     return layer_wrapper
