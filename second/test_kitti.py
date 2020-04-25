@@ -3,6 +3,7 @@ from second.data.kitti_dataset import KittiDataset
 import matplotlib.pyplot as plt
 import matplotlib.collections as mcoll
 import numpy as np
+import math
 import imageio
 import torch
 import torch.nn.functional as F
@@ -39,6 +40,13 @@ def save_depth_jpg(depth, name:str):
     gray = np.interp(depth, (depth.min(), depth.max()), (50,255))
     H, W = depth.shape
     imageio.imwrite(fig_path + name, gray.astype(np.uint8))
+
+def save_2d_jpg(feature, name:str):
+    """
+    save a 2d feature map to image file
+    depth : tensor of shape (H, W)
+    """
+    save_depth_jpg(feature, name)
 
 def xyz2range(points):
     """ convert points to depth map
@@ -93,7 +101,7 @@ def xyz2range_v2(points, ith=0, plot_diff=False, visualize=False):
     distance = np.sqrt(x2y2 + np.square(z))
     # phi
     # arctan2 , and arcsin, almost the same result
-    phi = np.arctan2(-y, x)
+    phi = np.arctan2(y, x)
     # phi_p = np.arcsin(-y / np.sqrt(x ** 2 + y ** 2 ))
     # print("x rad diff", phi, phi_p, np.sum(phi - phi_p))
     angle_diff = np.diff(phi)
@@ -278,6 +286,7 @@ def init_depth_from_feature(feature, k):
     """
     distance = feature[:, 3, :, :]
     depth = ((distance - distance.min()) * k / (distance.max()- distance.min())).long()
+    # depth = k-depth # ????
     return depth
 
 class ConvNet(nn.Module):
@@ -330,7 +339,8 @@ class ConvNet(nn.Module):
 
     def forward(self, feature):
 
-        depth = init_depth_from_feature(feature, 128)
+        with torch.no_grad:
+            depth = init_depth_from_feature(feature, 128)
         # with torch.no_grad():
         #     print("depth.shape, depth.shape")
         #     print("depth,", depth[0])
@@ -449,7 +459,8 @@ class DepConvNet(nn.Module):
 
     def forward(self, feature):
 
-        depth = init_depth_from_feature(feature, 128)
+        with torch.no_grad:
+            depth = init_depth_from_feature(feature, 128)
         # with torch.no_grad():
         #     print("depth.shape, depth.shape")
         #     print("depth,", depth[0])
@@ -580,7 +591,8 @@ class DepConvNet2(nn.Module):
 
     def forward(self, feature):
 
-        depth = init_depth_from_feature(feature, 512)
+        with torch.no_grad():
+            depth = init_depth_from_feature(feature, 512)
         # with torch.no_grad():
         #     print("depth.shape, depth.shape")
         #     print("depth,", depth[0])
@@ -596,9 +608,13 @@ class DepConvNet2(nn.Module):
         x = self.conv1(feature, depth)
         x = self.bn1(x)
         x = F.relu(x)
+        # depthmap_bev(x, depth)
+
         x = self.conv2(x, depth)
         x = self.bn2(x)
         x = F.relu(x)
+
+        # depthmap_bev(x, depth)
         # x = self.conv3(x, depth)
         # depth = F.max_pool2d(depth.float(), 3, padding=1, stride=(1,2)).long()
         # x = self.bn3(x)
@@ -620,6 +636,8 @@ class DepConvNet2(nn.Module):
         x = self.conv7(x, depth)
         x = self.bn7(x)
         x = F.relu(x)
+
+
         # x = self.conv8(x, depth)
         # x = self.bn8(x)
         # x = F.relu(x)
@@ -631,6 +649,8 @@ class DepConvNet2(nn.Module):
         x = self.conv20(x, depth)
         x = self.bn20(x)
         x = F.relu(x)
+        # with torch.no_grad():
+        #     depthmap_bev(x, depth)
         x = self.conv21(x, depth)
         x = self.bn21(x)
         x = F.relu(x)
@@ -667,6 +687,11 @@ class DepConvNet2(nn.Module):
 
         x = depth_to_3D(x, depth, 64)
         B, C, D, H, W = x.shape
+        # with torch.no_grad():
+        #     # f =
+        #     for c in range(C):
+        #         save_2d_jpg(x[0][c].sum(dim=0), "bevmap-%d.jpg"%(c))
+
         print("shape BCDHW, ", B,C,D,H,W)
         return x.permute(0,1,3,2,4).reshape(B, C*H, D, W)
 
@@ -792,6 +817,30 @@ def depconv3d_(input, depth, weight,
     return output
 
 
+
+
+def depth_to_2D(feature, depth, D=0):
+    """
+    extract one thin layer, of the 3D voxels
+
+    Aruguments:
+        feature : tensor of shape (batchsize, Channel, H, W)
+        depth : long tensor of shape (batchsize, H, W)
+        D: index of the extracted slice
+
+    Returns:
+        a 3D tensor of size (batchsize, Channel, D, H, W)
+    """
+    assert False, "unfinished, untested"
+    B, C, H, W = feature.shape
+    device = feature.get_device()
+    ret_tensor = torch.zeros(B, C, D, H, W, device=device)
+    feature_ = feature.reshape(B, C, 1, H, W).expand_as(ret_tensor)
+    depth_idx = depth.reshape(B, 1, 1, H, W).expand_as(ret_tensor)
+    depth_idx[depth_idx >= D]  = D - 1
+    # expand to shape, B, C, D, H, W
+    ret_tensor.scatter_(2, depth_idx, feature_)
+    return ret_tensor
 
 
 def depth_to_3D(feature, depth, D=0):
@@ -933,3 +982,238 @@ def testDConv():
 # test_submanifold_conv3d()
 
 # test_xyz2range_v2()
+
+depth_map_bev_count = 0
+def depthmap_bev(feature, depth, D=0):
+    """
+    aruguments:
+        feature: tensor of shape (B,C,H,W)
+        depth: (B,H,W)
+        D: the max of 'depth', if not given, it will guess
+    save image file
+    """
+    global depth_map_bev_count
+    f3d = depth_to_3D(feature, depth, D=D)
+    B, C, D, H, W = f3d.shape
+    for C_i in range(C):
+        f3d_piece = f3d[0][C_i]
+        # sum over depth, D,H,W
+        f2d = f3d_piece.sum(dim=1)
+        save_2d_jpg(f2d, "fmap-%d-%d.jpg" % (depth_map_bev_count , C_i))
+        depth_map_bev_count +=1
+
+
+
+def depconv3d_v2(input:List[torch.Tensor],
+        depth:torch.Tensor,
+        weight:torch.Tensor,
+        bias=torch.tensor([]),
+        stride=1,
+        padding=0,
+        dilation=1,
+        groups=1
+        ):
+    """
+    Applies a 3D convolution on 2D input with depth info.
+
+    Parameters:
+
+        input: the input is a list of  tensors of shape (minibatch, in_channels, iH, iW)
+
+        depth: depth tensor of shape (minibatch, iH, iW), of type int
+        weight: a 3d filter of shape
+                    (out_channels, in_channels/groups, kD, kH, kW)
+        bias: optional bias tensor of shape (out_channels). Default: None
+        stride: the stride of the cconvolving kernel, can be a single number or
+            a tuple (sD, sH, sW). Default: 1
+        padding: implicit paddings on both sides of the input. Can be a single
+            number or a tuple (padH, padW). Default: 0
+        dilation: the spacing between kernel elements. Can be a snigle number
+            or a tuple (dD, dH, dW). Default: 1
+        groups: split into groups, in_channels shouldd be divisible by the
+            number of groups. Default: 1
+
+        see https://github.com/vdumoulin/conv_arithmetic/blob/master/README.md
+
+    Returns:
+
+        a list of tensors of shape(N, out_channels, oH, oW)
+
+        where
+
+            oH = floor((iH + 2 x padH - dH x (kH - 1) -1) / sH + 1)
+            oW = floor((iW + 2 x padW - dW x (kW - 1) -1) / sW + 1)
+
+    Examples:
+
+        filters = torch.torch.randn(33, 16, 3, 3)
+        depth = torch.randn()
+    """
+    # group not supported yet
+    assert groups == 1
+    assert input[0].dim() == 4
+    assert depth.dim() == 3
+    assert weight.dim() == 5
+
+    if not isinstance(stride, (list, tuple)):
+        stride = [stride] * 3
+    if not isinstance(padding, (list, tuple)):
+        padding = [padding] * 3
+    if not isinstance(dilation, (list, tuple)):
+        dilation = [dilation] * 3
+
+    return depconv3d_v2_(input, depth, weight,
+        bias, stride, padding, dilation, groups)
+
+def submanifold_conv(feature, weight):
+    """
+    feature : unfolded feature
+            of shape B, iC * kH * kW, N
+    weight :
+    """
+
+
+    return
+
+# @torch.jit.script
+def depconv3d_v2_(input:List[torch.Tensor],
+        depth, weight,
+        bias:torch.Tensor,
+        stride:List[int],
+        padding:List[int],
+        dilation:List[int],
+        groups:int):
+
+    B, iC, iH, iW = input[0].shape
+    oC, iC, kD, kH, kW = weight.shape
+    sD, sH, sW = stride
+    padD, padH, padW = padding
+    dD, dH, dW = dilation
+    assert (kD == 3), "only support weight of shape 3xnxn now"
+    assert (dD == 1 and dH == 1 and dW == 1), "only support dilation of 1x1x1"
+
+    # im2colo for tensors in inputs
+    def unfold_inputs(inputs:List[torch.Tensor]):
+        res = []
+        for i in inputs:
+            # im2colo
+            # unfold, only 4D input tensors are supported
+            unfolded = F.unfold(i, kernel_size=(kH, kW), dilation=dilation[1:], padding=padding[1:], stride=stride[1:])
+            # B, iC * kH * kW, N
+            res.append(unfolded)
+        return res
+
+    def get_indexes(depth:torch.Tensor):
+        """
+        return the index and 'N', the number of sliding window
+        """
+        depth_ = depth.unsqueeze(1) # B, 1, iH, iW
+        # unfold only support float tensor
+        unfolded_depth = F.unfold(depth_.float(), kernel_size=(kH, kW),
+            dilation=dilation[1:], padding=padding[1:], stride=stride[1:]).long()
+         # B , kH * kW * 1 , N
+        N = unfolded_depth.size(-1)
+
+        # depth difference
+        depth_diff = (unfolded_depth - unfolded_depth[:, kH * kW // 2, :].unsqueeze(1))
+        # B, kH * kW * 1, N
+
+        # indexes
+        i0, i1, i2 = depth_diff, depth_diff + 1, depth_diff + 2
+
+        return clip_depth_index(i0), clip_depth_index(i1), clip_depth_index(i2), N
+        # B, kH*kW*1 , N
+
+    # in range
+    def clip_depth_index(index):
+        index[index < 0] = 3
+        index[index > 3] = 3
+        return index
+
+
+    def unfold_weight(index, weght, N):
+        # extend weight with zeros, for indexing out of range values
+        ext_weight = torch.cat((weight, torch.zeros([oC, iC, 1, kH, kW], device=torch.device('cuda'))), dim=2)
+            # oC, iC, kD+1, kH, kW
+
+        index = index.reshape(B, 1, 1, 1, kH *kW, N).expand(-1, oC, iC, -1, -1, -1) # B, oC, iC, 1, kH*kW, N
+        b_weight = ext_weight.reshape(oC, iC, kD + 1, kH * kW).unsqueeze(0) \
+            .unsqueeze(-1).expand(B, -1, -1, -1, -1, N)  # B, oC, iC, kD, kH*kW, N
+
+        unfolded_weight = b_weight.gather(3, index).reshape(B, oC, iC * kH * kW, N) # B, oC, iC * kH * kW, N
+        return unfolded_weight
+
+    i0, i1, i2, N = get_indexes(depth)
+
+    w0 = unfold_weight(i0, weight, N)
+    w1 = unfold_weight(i1, weight, N)
+    w2 = unfold_weight(i2, weight, N)
+
+    def mul_(weight, feature):
+        return torch.einsum('bikj,bkj->bij', weight, feature)
+        # B, oC, N
+
+    unfolded_inputs = unfold_inputs(input)
+
+    zero = torch.Tensor(0)
+    out0 = [ mul_(w2, f) for f in unfolded_inputs] + [0, 0]
+    out1 = [0] + [ mul_(w1, f) for f in unfolded_inputs] + [0]
+    out2 = [0,0] + [ mul_(w0, f) for f in unfolded_inputs]
+
+    out = [a + b + c for a, b, c in zip(out0, out1, out2)]
+
+    # print("type",(unfolded_weight.dtype), (unfolded_input.dtype))
+    # print("enisum shape ", unfolded_weight.shape, unfolded_input.shape)
+    # unfolded_output = torch.einsum('bikj,bkj->bij', unfolded_weight, unfolded_input)
+    # # B, oC, N
+
+    oH = int(math.floor((iH + 2 * padH - dH * (kH - 1) -1) / sH + 1))
+    oW = int(math.floor((iW + 2 * padW - dW * (kW - 1) -1) / sW + 1))
+    #
+
+    output = [ F.fold(o, output_size=(oH, oW), kernel_size=(1,1)) for o in out]
+    # change the depth
+    # depth = ((depth + padD - dD * (kD // 2)) // sD + 1).long()
+    # depth
+
+    # if bias is not None:
+    #     output += bias.unsqueeze(0).expand_as(output)
+    # output = output.reshape()
+    return output
+
+def test_depconv3dv2():
+    feature = [torch.tensor(
+        [[.1,.2,.3],
+        [.4,.5,.6],
+        [.7,.8,.9]]).reshape(1,1,3,3).cuda()]
+    depth = torch.tensor(
+        [[0,0,1],
+         [1,1,0],
+         [1,1,2]]).reshape(1,3,3).cuda()
+    depth = torch.tensor(
+        [[1,1,1],
+         [1,1,1],
+         [1,1,1]]).reshape(1,3,3).cuda()
+    depth = torch.tensor(
+        [[0,0,0],
+         [1,1,1],
+         [2,2,2]]).reshape(1,3,3).cuda()
+    weight = torch.ones(1,1,3,3,3).cuda()
+    res = depconv3d_v2(feature, depth, weight, padding=1)
+
+
+    feature_dense = depth_to_3D(feature[0], depth, 3)
+    print(feature_dense)
+    res_ref = F.conv3d(feature_dense, weight, padding=1)
+
+    res = (depth_to_3D(res[0],depth, 5) +
+        depth_to_3D(res[1], depth+1, 5) +
+        depth_to_3D(res[2], depth+2, 5))
+    print(res)
+
+    print(res_ref)
+
+# test_depconv3dv2()
+
+
+
