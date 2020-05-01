@@ -278,14 +278,14 @@ class DepConv3D(nn.Module):
 def init_depth_from_feature(feature, k):
     """
         return a depth tensor of shape (B, H, W)
-        max depth be 'k'
+        max depth be 'k-1'
 
     Argument:
         feature: tensor of shape(B, C, H, W),
             C = 5
     """
     distance = feature[:, 3, :, :]
-    depth = ((distance - distance.min()) * k / (distance.max()- distance.min())).long()
+    depth = ((distance - distance.min()) * k-1 / (distance.max()- distance.min())).long()
     # depth = k-depth # ????
     return depth
 
@@ -907,6 +907,8 @@ def depth_to_3D_v2(feature:list, depth, D=0):
     for i in range(thick):
         f_i = feature[i].reshape(B, C, 1, H, W).expand_as(ret_tensor)
         idx_i = depth_idx + i
+        idx_i[idx_i > D] = D-1
+        ## ??? why have to do this ?
         ret_tensor.scatter_(2, idx_i, f_i)
         # print("ret", ret_tensor)
     return ret_tensor[:,:,mid:-mid,:,:]
@@ -1401,7 +1403,7 @@ class DepConvNet3(nn.Module):
         xs = self.conv6(xs, depth)
         xs = [self.bn6(x) for x in xs]
         xs = [F.relu(x) for x in xs]
-        x = self.conv7(xs, depth)
+        xs = self.conv7(xs, depth)
         xs = [self.bn7(x) for x in xs]
         xs = [F.relu(x) for x in xs]
 
@@ -1409,43 +1411,43 @@ class DepConvNet3(nn.Module):
         # x = self.conv8(x, depth)
         # x = self.bn8(x)
         # x = F.relu(x)
-        x = self.conv9(x, depth)
+        xs = self.conv9(xs, depth)
         depth = F.max_pool2d(depth.float(), 3, padding=1, stride=(2,2)).long()
         depth = depth // 2
 
         xs = [self.bn9(x) for x in xs]
         xs = [F.relu(x) for x in xs]
-        x = self.conv20(x, depth)
+        xs = self.conv20(xs, depth)
         xs = [self.bn20(x) for x in xs]
         xs = [F.relu(x) for x in xs]
         # with torch.no_grad():
         #     depthmap_bev(x, depth)
-        x = self.conv21(x, depth)
+        xs = self.conv21(xs, depth)
         xs = [self.bn21(x) for x in xs]
         xs = [F.relu(x) for x in xs]
-        x = self.conv22(x, depth)
+        xs = self.conv22(xs, depth)
         xs = [self.bn22(x) for x in xs]
         xs = [F.relu(x) for x in xs]
-        x = self.conv11(x, depth)
+        xs = self.conv11(xs, depth)
         depth = F.max_pool2d(depth.float(), 3, padding=1, stride=(2,2)).long()
         depth = depth // 2
         xs = [self.bn11(x) for x in xs]
         xs = [F.relu(x) for x in xs]
-        x = self.conv12(x, depth)
+        xs = self.conv12(xs, depth)
         xs = [self.bn12(x) for x in xs]
         xs = [F.relu(x) for x in xs]
-        x = self.conv13(x, depth)
+        xs = self.conv13(xs, depth)
         xs = [self.bn13(x) for x in xs]
         xs = [F.relu(x) for x in xs]
         # x = self.conv14(x, depth)
         # depth = depth // 2
         # x = self.bn14(x)
         # x = F.relu(x)
-        x = self.conv15(x, depth)
+        xs = self.conv15(xs, depth)
         depth = F.max_pool2d(depth.float(), 3, padding=1, stride=(2,1)).long()
         xs = [self.bn15(x) for x in xs]
         xs = [F.relu(x) for x in xs]
-        x = self.conv16(x, depth)
+        xs = self.conv16(xs, depth)
         depth = F.max_pool2d(depth.float(), 3, padding=1, stride=(2,1)).long()
         xs = [self.bn16(x) for x in xs]
         xs = [F.relu(x) for x in xs]
