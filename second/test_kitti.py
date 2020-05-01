@@ -872,6 +872,47 @@ def depth_to_3D(feature, depth, D=0):
     ret_tensor.scatter_(2, depth_idx, feature_)
     return ret_tensor
 
+
+def depth_to_3D_v2(feature:list, depth, D=0):
+    """
+    convert (depth, feature) to a 3D tensor
+
+    Aruguments:
+        feature : a list of tensor of shape (batchsize, Channel, H, W)
+        depth : long tensor of shape (batchsize, H, W)
+
+    Returns:
+        a 3D tensor of size (batchsize, Channel, D, H, W)
+    """
+    # if not isinstance(depth, torch.LongTensor):
+    #      raise ValueError("'depth' should be of type LongTensor,"
+    #         " but got %s" % type(depth))
+    thick = len(feature)
+    mid = thick//2
+
+    D_min, D_max = depth.min(), depth.max()
+    print("D_min, D_max= ", D_min, D_max)
+    if D == 0:
+        D = D_max - D_min + 1
+
+
+    B, C, H, W = feature[0].shape
+    # print("feature", feature)
+    device = feature[0].get_device()
+    D = D + mid + mid
+    ret_tensor = torch.zeros(B, C, D, H, W, device=device)
+    # print("BCDHW,", B,C,D,H,W)
+    depth_idx = depth.reshape(B, 1, 1, H, W).expand_as(ret_tensor)
+
+    for i in range(thick):
+        f_i = feature[i].reshape(B, C, 1, H, W).expand_as(ret_tensor)
+        idx_i = depth_idx + i
+        ret_tensor.scatter_(2, idx_i, f_i)
+        # print("ret", ret_tensor)
+    return ret_tensor[:,:,mid:-mid,:,:]
+
+
+
 def _test_depth_to_3D():
 
     feature_map = torch.tensor(
@@ -1075,6 +1116,45 @@ def submanifold_conv(feature, weight):
 
     return
 
+
+    def forward(self, features, depth):
+        out_tensor = depconv3d_v2(features, depth, self.weight,
+            self.bias, self.stride, self.padding, self.dilation,
+            self.groups)
+        return out_tensor
+
+
+
+class DepConv3D_v2(DepConv3D):
+    def __init__(self,
+        in_channels,
+        out_channels,
+        kernel_size=3,
+        stride=1,
+        padding=0,
+        dilation=1,
+        groups=1,
+        bias=False,
+        subm=False):
+        super(DepConv3D_v2, self).__init__(
+            in_channels,
+            out_channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            dilation=dilation,
+            groups=groups,
+            bias=bias,
+            subm=subm)
+
+    def forward(self, features, depth):
+        out_tensor = depconv3d_v2(features, depth, self.weight,
+            self.bias, self.stride, self.padding, self.dilation,
+            self.groups)
+        if self.subm:
+            out_tensor = out_tensor[1:-1]
+        return out_tensor
+
 # @torch.jit.script
 def depconv3d_v2_(input:List[torch.Tensor],
         depth, weight,
@@ -1155,7 +1235,6 @@ def depconv3d_v2_(input:List[torch.Tensor],
 
     unfolded_inputs = unfold_inputs(input)
 
-    zero = torch.Tensor(0)
     out0 = [ mul_(w2, f) for f in unfolded_inputs] + [0, 0]
     out1 = [0] + [ mul_(w1, f) for f in unfolded_inputs] + [0]
     out2 = [0,0] + [ mul_(w0, f) for f in unfolded_inputs]
@@ -1206,9 +1285,11 @@ def test_depconv3dv2():
     print(feature_dense)
     res_ref = F.conv3d(feature_dense, weight, padding=1)
 
-    res = (depth_to_3D(res[0],depth, 5) +
-        depth_to_3D(res[1], depth+1, 5) +
-        depth_to_3D(res[2], depth+2, 5))
+
+    # res = (depth_to_3D(res[0],depth, 5) +
+    #     depth_to_3D(res[1], depth+1, 5) +
+    #     depth_to_3D(res[2], depth+2, 5))
+    res = depth_to_3D_v2(res, depth, 3)
     print(res)
 
     print(res_ref)
@@ -1216,4 +1297,169 @@ def test_depconv3dv2():
 # test_depconv3dv2()
 
 
+class DepConvNet3(nn.Module):
+    def __init__(self,
+        num_input_features,
+        use_norm=True):
+        super(DepConvNet3, self).__init__()
+        if use_norm:
+            BatchNorm2d = change_default_args(
+                eps=1e-3, momentum=0.01)(nn.BatchNorm2d)
+            BatchNorm1d = change_default_args(
+                eps=1e-3, momentum=0.01)(nn.BatchNorm1d)
+            Conv2d = change_default_args(bias=False)(nn.Conv2d)
+        else:
+            BatchNorm2d = Empty
+            BatchNorm1d = Empty
+            Conv2d = change_default_args(bias=True)(nn.Conv2d)
 
+        # 512 * 64 * 512
+        self.conv1 = DepConv3D(num_input_features, 16, 3, padding=1)
+        self.bn1 = BatchNorm2d(16)
+        self.conv2 = DepConv3D(16, 16, 3, padding=1)
+        self.bn2 = BatchNorm2d(16)
+        # self.conv3 = DepConv3D(16, 16, 3, padding=1) # 512 * 64 * 256
+        # self.bn3 = BatchNorm2d(16)
+        # self.conv4 = DepConv3D(16, 16, 3, padding=1)
+        # self.bn4 = BatchNorm2d(16)
+        # self.conv16 = DepConv3D(16, 16, 3, padding=1)
+        # self.bn16 = BatchNorm2d(16)
+        self.conv5 = DepConv3D_v2(16, 32, 3, 2, padding=1) # 256 * 32 * 128
+        self.bn5 = BatchNorm2d(32)
+        self.conv6 = DepConv3D_v2(32, 32, 3, padding=1, subm=True)
+        self.bn6 = BatchNorm2d(32)
+        self.conv7 = DepConv3D_v2(32, 32, 3, padding=1, subm=True)
+        self.bn7 = BatchNorm2d(32)
+        # self.conv8 = DepConv3D(32, 32, 3, padding=1)
+        # self.bn8 = BatchNorm2d(32)
+        self.conv9 = DepConv3D_v2(32, 64, 3, (2,2,2), padding=1) # 128, 32, 64
+        self.bn9 = BatchNorm2d(64)
+        self.conv20 = DepConv3D_v2(64, 64, 3, padding=1, subm=True)
+        self.bn20 = BatchNorm2d(64)
+        self.conv21 = DepConv3D_v2(64, 64, 3, padding=1, subm=True)
+        self.bn21 = BatchNorm2d(64)
+        self.conv22 = DepConv3D_v2(64, 64, 3, padding=1, subm=True)
+        self.bn22 = BatchNorm2d(64)
+        self.conv11 = DepConv3D_v2(64, 64, 3, (2,2,2), padding=1)# 64, 16, 64
+        self.bn11 = BatchNorm2d(64)
+        self.conv12 = DepConv3D_v2(64, 64, 3, padding=1, subm=True) # 8 * 32 * 64
+        self.bn12 = BatchNorm2d(64)
+        self.conv13 = DepConv3D_v2(64, 64, 3, padding=1, subm=True) # 4
+        self.bn13 = BatchNorm2d(64)
+        # self.conv14 = DepConv3D(64, 64, 3, padding=1) # 2
+        # self.bn14 = BatchNorm2d(64)
+        self.conv15 = DepConv3D_v2(64, 64, 3, (1,2,1), padding=1,subm=True)
+        self.bn15 = BatchNorm2d(64)
+        self.conv16 = DepConv3D_v2(64, 64, 3, (1,2,1), padding=1,subm=True)
+        self.bn16 = BatchNorm2d(64)
+        # self.conv17 = DepConv3D(64, 64, 3, (1,2,1), padding=1)
+        # self.bn17 = BatchNorm2d(64)
+
+        self.count = 0
+
+    def forward(self, feature):
+
+        with torch.no_grad():
+            depth = init_depth_from_feature(feature, 512)
+        # with torch.no_grad():
+        #     print("depth.shape, depth.shape")
+        #     print("depth,", depth[0])
+        #     save_depth_jpg(depth[0], "{:2d}.jpg".format(self.count))
+        # self.count += 1
+
+        # print("depth =", depth)
+        # print("depth min, max, shape", depth.min(), depth.max(), depth.shape)
+        # print("feature shape ", feature.shape)
+        # print("depth =", depth)
+        # print("depth min, max, shape", depth.min(), depth.max(), depth.shape)
+        # print("feature shape ", feature.shape)
+        x = self.conv1(feature, depth)
+        x = self.bn1(x)
+        x = F.relu(x)
+        # depthmap_bev(x, depth)
+
+        x = self.conv2(x, depth)
+        x = self.bn2(x)
+        x = F.relu(x)
+
+        # depthmap_bev(x, depth)
+        # x = self.conv3(x, depth)
+        # depth = F.max_pool2d(depth.float(), 3, padding=1, stride=(1,2)).long()
+        # x = self.bn3(x)
+        # x = F.relu(x)
+        # x = self.conv4(x, depth)
+        # x = self.bn4(x)
+        # x = F.relu(x)
+        # x = self.conv16(x, depth)
+        # x = self.bn16(x)
+        # x = F.relu(x)
+        xs = self.conv5([x], depth)
+        depth = F.max_pool2d(depth.float(), 3, padding=1, stride=(2,2)).long()
+        depth = depth // 2
+        xs = [ self.bn5(x) for x in xs]
+        xs = [F.relu(x) for x in xs]
+        xs = self.conv6(xs, depth)
+        xs = [self.bn6(x) for x in xs]
+        xs = [F.relu(x) for x in xs]
+        x = self.conv7(xs, depth)
+        xs = [self.bn7(x) for x in xs]
+        xs = [F.relu(x) for x in xs]
+
+
+        # x = self.conv8(x, depth)
+        # x = self.bn8(x)
+        # x = F.relu(x)
+        x = self.conv9(x, depth)
+        depth = F.max_pool2d(depth.float(), 3, padding=1, stride=(2,2)).long()
+        depth = depth // 2
+
+        xs = [self.bn9(x) for x in xs]
+        xs = [F.relu(x) for x in xs]
+        x = self.conv20(x, depth)
+        xs = [self.bn20(x) for x in xs]
+        xs = [F.relu(x) for x in xs]
+        # with torch.no_grad():
+        #     depthmap_bev(x, depth)
+        x = self.conv21(x, depth)
+        xs = [self.bn21(x) for x in xs]
+        xs = [F.relu(x) for x in xs]
+        x = self.conv22(x, depth)
+        xs = [self.bn22(x) for x in xs]
+        xs = [F.relu(x) for x in xs]
+        x = self.conv11(x, depth)
+        depth = F.max_pool2d(depth.float(), 3, padding=1, stride=(2,2)).long()
+        depth = depth // 2
+        xs = [self.bn11(x) for x in xs]
+        xs = [F.relu(x) for x in xs]
+        x = self.conv12(x, depth)
+        xs = [self.bn12(x) for x in xs]
+        xs = [F.relu(x) for x in xs]
+        x = self.conv13(x, depth)
+        xs = [self.bn13(x) for x in xs]
+        xs = [F.relu(x) for x in xs]
+        # x = self.conv14(x, depth)
+        # depth = depth // 2
+        # x = self.bn14(x)
+        # x = F.relu(x)
+        x = self.conv15(x, depth)
+        depth = F.max_pool2d(depth.float(), 3, padding=1, stride=(2,1)).long()
+        xs = [self.bn15(x) for x in xs]
+        xs = [F.relu(x) for x in xs]
+        x = self.conv16(x, depth)
+        depth = F.max_pool2d(depth.float(), 3, padding=1, stride=(2,1)).long()
+        xs = [self.bn16(x) for x in xs]
+        xs = [F.relu(x) for x in xs]
+        # x = self.conv17(x, depth)
+        # depth = F.max_pool2d(depth.float(), 3, padding=1, stride=(2,1)).long()
+        # x = self.bn17(x)
+        # x = F.relu(x)
+
+        x = depth_to_3D_v2(xs, depth, 64)
+        B, C, D, H, W = x.shape
+        # with torch.no_grad():
+        #     # f =
+        #     for c in range(C):
+        #         save_2d_jpg(x[0][c].sum(dim=0), "bevmap-%d.jpg"%(c))
+
+        print("shape BCDHW, ", B,C,D,H,W)
+        return x.permute(0,1,3,2,4).reshape(B, C*H, D, W)

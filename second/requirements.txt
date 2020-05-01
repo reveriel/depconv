@@ -1,0 +1,10 @@
+fire
+scikit-image
+flask
+flask_cors
+protobuf
+numba
+opencv-python
+seaborn
+tensorboardX
+psutil

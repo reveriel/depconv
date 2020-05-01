@@ -31,7 +31,7 @@ CORS(app)
 
 class SecondBackend:
     def __init__(self):
-        self.root_path = None 
+        self.root_path = None
         self.image_idxes = None
         self.dt_annos = None
         self.dataset = None
@@ -59,6 +59,7 @@ def readinfo():
     info_path = Path(instance["info_path"])
     dataset_class_name = instance["dataset_class_name"]
     BACKEND.dataset = get_dataset_class(dataset_class_name)(root_path=root_path, info_path=info_path)
+
     BACKEND.image_idxes = list(range(len(BACKEND.dataset)))
     response["image_indexes"] = BACKEND.image_idxes
     response = jsonify(results=[response])
@@ -93,7 +94,7 @@ def get_pointcloud():
         return error_response("root path is not set")
     image_idx = instance["image_idx"]
     enable_int16 = instance["enable_int16"]
-    
+
     idx = BACKEND.image_idxes.index(image_idx)
     sensor_data = BACKEND.dataset.get_sensor_data(idx)
 
@@ -129,7 +130,7 @@ def get_image():
     instance = request.json
     response = {"status": "normal"}
     if BACKEND.root_path is None:
-        return error_response("root path is not set")    
+        return error_response("root path is not set")
     image_idx = instance["image_idx"]
     idx = BACKEND.image_idxes.index(image_idx)
     query = {

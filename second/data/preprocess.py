@@ -303,7 +303,7 @@ def prep_pointcloud(input_dict,
     t1 = time.time()
 
 
-    generate_voxels = False
+    generate_voxels = True
     if generate_voxels:
         if not multi_gpu:
             res = voxel_generator.generate(
@@ -324,16 +324,16 @@ def prep_pointcloud(input_dict,
 
     metrics["voxel_gene_time"] = time.time() - t1
 
-    # example = {
-    #     'voxels': voxels,
-    #     'num_points': num_points,
-    #     'coordinates': coordinates,
-    #     "num_voxels": num_voxels,
-    #     "metrics": metrics,
+    example = {
+        'voxels': voxels,
+        'num_points': num_points,
+        'coordinates': coordinates,
+        "num_voxels": num_voxels,
+        "metrics": metrics,
     # }
 
-    example = {
-        "metrics": metrics,
+    # example = {
+        # "metrics": metrics,
         "feature": feature,
     }
 
