@@ -16,7 +16,7 @@ from second.pytorch.models import middle, pointpillars, rpn, voxel_encoder
 from torchplus import metrics
 from second.pytorch.utils import torch_timer
 
-from second.test_kitti import DepConvNet, ConvNet, DepConvNet2
+from second.test_kitti import DepConvNet, ConvNet, DepConvNet2, DepConvNet3
 
 def _get_pos_neg_loss(cls_loss, labels):
     # cls_loss: [N, num_anchors, num_class]
@@ -154,7 +154,7 @@ class VoxelNet(nn.Module):
         #     num_input_features=middle_num_input_features,
         #     num_filters_down1=middle_num_filters_d1,
         #     num_filters_down2=middle_num_filters_d2)
-        self.feature_extractor = DepConvNet2(5)
+        self.feature_extractor = DepConvNet3(5)
 
         self.rpn = rpn.get_rpn_class(rpn_class_name)(
             use_norm=True,
