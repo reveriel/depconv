@@ -27,7 +27,8 @@ def test_xyz2range_v2():
             break
         item = dataset.get_sensor_data(i+8)
         # print(input_dict)
-        print(item)
+        # print(item)
+        print(item['lidar']['annotations']['boxes'])
         points = item['lidar']['points']
         # range_map = xyz2range(points)
         # imageio.imwrite(fig_path + 'range_map_{:d}.jpg'.format(i),

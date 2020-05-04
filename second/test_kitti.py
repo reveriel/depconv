@@ -83,8 +83,8 @@ def xyz2range(points):
                              (50,255))
     H = 64
     W = 512
-    C = 1
-    range_map = np.zeros((H, W, C))
+    C = 5
+    range_map = np.zeros((C, H, W))
     range_map[63 - theta_idx,phi_idx,0] = distance_gray
     return range_map
 
@@ -1360,6 +1360,9 @@ class DepConvNet3(nn.Module):
         self.count = 0
 
     def forward(self, feature):
+
+        if feature.dim() == 3:
+            feature = feature.unsqueeze(0)
 
         with torch.no_grad():
             depth = init_depth_from_feature(feature, 512)

@@ -120,3 +120,56 @@ class AnchorGeneratorRange(AnchorGenerator):
     @property
     def custom_ndim(self):
         return len(self._custom_values)
+
+
+class AnchorGeneratorShpereRange(AnchorGenerator):
+    def __init__(self,
+                 anchor_ranges,
+                 sizes=[1.6, 3.9, 1.56],
+                 rotations=[0, np.pi / 2],
+                 class_name=None,
+                 match_threshold=-1,
+                 unmatch_threshold=-1,
+                 custom_values=(),
+                 dtype=np.float32):
+        super().__init__()
+        self._sizes = sizes
+        self._anchor_ranges = anchor_ranges
+        self._rotations = rotations
+        self._dtype = dtype
+        self._class_name = class_name
+        self.match_threshold = match_threshold
+        self.unmatch_threshold = unmatch_threshold
+        self._custom_values = custom_values
+
+    @property
+    def class_name(self):
+        return self._class_name
+
+    @property
+    def num_anchors_per_localization(self):
+        num_rot = len(self._rotations)
+        num_size = np.array(self._sizes).reshape([-1, 3]).shape[0]
+        return num_rot * num_size
+
+    def generate(self, feature_map_size):
+        print("feautres size", feature_map_size)
+        res = box_np_ops.create_anchors_3d_sphere(
+            feature_map_size, self._anchor_ranges, self._sizes,
+            self._rotations, self._dtype)
+        print("res =", res.shape)
+
+        if len(self._custom_values) > 0:
+            custom_ndim = len(self._custom_values)
+            custom = np.zeros([*res.shape[:-1], custom_ndim])
+            custom[:] = self._custom_values
+            res = np.concatenate([res, custom], axis=-1)
+        return res
+
+    @property
+    def ndim(self):
+        return 7 + len(self._custom_values)
+
+    @property
+    def custom_ndim(self):
+        return len(self._custom_values)
