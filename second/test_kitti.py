@@ -29,6 +29,52 @@ class DepImage:
         self.depth = depth
         self.thickness = thickness
 
+def save_2d_jpg(feature, name:str):
+    """
+    save a 2d feature map to image file
+    depth : tensor of shape (H, W)
+    """
+    save_depth_jpg(feature, name)
+
+def xyz2range(points):
+    """ convert points to depth map
+        devide evenly, not wokring very well
+    """
+    shape = points.shape
+    print("shape = ", shape)
+    x = points[:, 0]  # -71~73
+    y = points[:, 1]  # -21~53
+    z = points[:, 2]  # -5~2.6
+    intensity = points[:, 3]  # 0~1
+    # convert xyz to theta-phi-r
+    x2y2 = np.square(x)  + np.square(y)
+    distance = np.sqrt(x2y2 + np.square(z))
+    distance[distance == 0] = 1e-6
+    thetas = np.arcsin(z / distance)
+    phis = np.arcsin(-y / np.sqrt(x2y2))
+    # print("min thetas = ", np.min(thetas))
+    # print("max theats = ", np.max(thetas))
+    # print("min phis = ", np.min(phis))
+    # print("max phis = ", np.max(phis))
+    # delta_phi = np.radians(90./512.)
+    delta_phi = (np.max(phis) - np.min(phis)) / 511.
+    # veldyne , resolution 26.8  vertical,
+    # delta_theta = np.radians(26.8/64)
+    delta_theta = (np.max(thetas) - np.min(thetas)) / 64.
+    theta_idx = ((thetas - np.min(thetas)) / delta_theta).astype(int)
+    phi_idx = ((phis - np.min(phis)) / delta_phi).astype(int)
+    print("theta_idx = ", theta_idx)
+    print("phi_idx = ", phi_idx)
+    reflect_gray = (intensity * 255).astype(int)
+    print("reflect_gray = ", reflect_gray)
+    distance_gray = np.interp(distance, (distance.min(), distance.max()),
+                             (50,255))
+    H = 64
+    W = 512
+    C = 5
+    range_map = np.zeros((C, H, W))
+    range_map[63 - theta_idx,phi_idx,0] = distance_gray
+    return range_map
 
 
 def _calculate_fan_in_and_fan_out_hwio(tensor):
@@ -113,8 +159,8 @@ def init_depth_from_feature(feature, k):
         feature: tensor of shape(B, C, H, W),
             C = 5
     """
-    distance = feature[:, 3, :, :]
-    depth = ((distance - distance.min()) * k-1 / (distance.max()- distance.min())).long()
+    r = feature[:, 3, :, :]
+    depth = ((r - r.min()) * (k-1) / (r.max()- r.min())).long()
     # depth = k-depth # ????
     return depth
 
@@ -1195,6 +1241,7 @@ class DepConvNet3(nn.Module):
 
         with torch.no_grad():
             depth = init_depth_from_feature(feature, 512)
+
         # with torch.no_grad():
         #     print("depth.shape, depth.shape")
         #     print("depth,", depth[0])
