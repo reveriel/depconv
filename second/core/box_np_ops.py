@@ -651,6 +651,10 @@ def create_anchors_3d_sphere_range(feature_size,
         anchors: [*feature_size, num_sizes, num_rots, 7] tensor.
     """
     anchor_range = np.array(anchor_range, dtype)
+    r_centers = np.linspace(
+        anchor_range[0], anchor_range[]
+    )
+
     z_centers = np.linspace(
         anchor_range[2], anchor_range[5], feature_size[0], dtype=dtype)
     y_centers = np.linspace(

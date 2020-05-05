@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import matplotlib.collections as mcoll
 import numpy as np
 import math
-import imageio
 import torch
 import torch.nn.functional as F
 from torch import nn
@@ -15,7 +14,6 @@ import unittest
 from torchplus.tools import change_default_args
 import math
 
-fig_path = "output/"
 
 # kitti,
 # theta, about , -0.25, 0.05
@@ -31,176 +29,7 @@ class DepImage:
         self.depth = depth
         self.thickness = thickness
 
-def save_depth_jpg(depth, name:str):
-    """
-    save depth map to image file
-    depth : tensor of shape (H, W)
-    """
-    depth = depth.cpu().numpy()
-    gray = np.interp(depth, (depth.min(), depth.max()), (50,255))
-    H, W = depth.shape
-    imageio.imwrite(fig_path + name, gray.astype(np.uint8))
 
-def save_2d_jpg(feature, name:str):
-    """
-    save a 2d feature map to image file
-    depth : tensor of shape (H, W)
-    """
-    save_depth_jpg(feature, name)
-
-def xyz2range(points):
-    """ convert points to depth map
-        devide evenly, not wokring very well
-    """
-    shape = points.shape
-    print("shape = ", shape)
-    x = points[:, 0]  # -71~73
-    y = points[:, 1]  # -21~53
-    z = points[:, 2]  # -5~2.6
-    intensity = points[:, 3]  # 0~1
-    # convert xyz to theta-phi-r
-    x2y2 = np.square(x)  + np.square(y)
-    distance = np.sqrt(x2y2 + np.square(z))
-    distance[distance == 0] = 1e-6
-    thetas = np.arcsin(z / distance)
-    phis = np.arcsin(-y / np.sqrt(x2y2))
-    # print("min thetas = ", np.min(thetas))
-    # print("max theats = ", np.max(thetas))
-    # print("min phis = ", np.min(phis))
-    # print("max phis = ", np.max(phis))
-    # delta_phi = np.radians(90./512.)
-    delta_phi = (np.max(phis) - np.min(phis)) / 511.
-    # veldyne , resolution 26.8  vertical,
-    # delta_theta = np.radians(26.8/64)
-    delta_theta = (np.max(thetas) - np.min(thetas)) / 64.
-    theta_idx = ((thetas - np.min(thetas)) / delta_theta).astype(int)
-    phi_idx = ((phis - np.min(phis)) / delta_phi).astype(int)
-    print("theta_idx = ", theta_idx)
-    print("phi_idx = ", phi_idx)
-    reflect_gray = (intensity * 255).astype(int)
-    print("reflect_gray = ", reflect_gray)
-    distance_gray = np.interp(distance, (distance.min(), distance.max()),
-                             (50,255))
-    H = 64
-    W = 512
-    C = 5
-    range_map = np.zeros((C, H, W))
-    range_map[63 - theta_idx,phi_idx,0] = distance_gray
-    return range_map
-
-def xyz2range_v2(points, ith=0, plot_diff=False, visualize=False):
-    """
-    """
-    v_res=26.9/64,
-    h_res=90./512.
-    x = points[:, 0]  # -71~73
-    y = points[:, 1]  # -21~53
-    z = points[:, 2]  # -5~2.6
-    intensity = points[:, 3]  # 0~1
-    x2y2 = np.sqrt(np.square(x) + np.square(y))
-    distance = np.sqrt(x2y2 + np.square(z))
-    # phi
-    # arctan2 , and arcsin, almost the same result
-    phi = np.arctan2(y, x)
-    # phi_p = np.arcsin(-y / np.sqrt(x ** 2 + y ** 2 ))
-    # print("x rad diff", phi, phi_p, np.sum(phi - phi_p))
-    angle_diff = np.diff(phi)
-    if plot_diff:
-        plt.plot(np.diff(phi))
-        plt.savefig(fig_path+"angle_diff_{:d}.jpg".format(ith), dpi=300)
-        plt.clf()
-    threshold_angle = np.radians(10)  # huristic
-    angle_diff = np.hstack((angle_diff, 0.0001)) # append one
-    # new row when diff bigger than threashold
-    angle_diff_mask = angle_diff > threshold_angle
-    theta_idx = np.cumsum(angle_diff_mask)
-    theta_idx[theta_idx >= 64] = 63
-    # print("theta max min", theta_idx.max(), theta_idx.min())
-    delta_phi = np.radians(90./512.)
-    # delta_phi = np.radians((x.max() - x.min()) / 500.) # doenst work. many missing dots horiizontally
-    phi_idx = np.floor((phi / delta_phi)).astype(int)
-    phi_idx -= np.min(phi_idx) # translate to positive
-    phi_idx[phi_idx >= 512] = 511
-    # x_max = int(360.0 / h_res) #+ 1  # 投影后图片的宽度
-    x_max = 512
-    if visualize:
-        depth_gray = np.interp(distance, (distance.min(), distance.max()), (20,255))
-        depth_image = np.zeros((64, 512, 1))
-        depth_image[theta_idx, phi_idx, 0] = depth_gray
-        imageio.imwrite(fig_path + 'range_map_v2_{:d}.jpg'.format(ith),
-            depth_image.astype(np.uint8))
-    # 可能有 data loss， 有些数据点被覆盖了。
-    depth_map = np.zeros((5, 64, 512), dtype=float) #+255
-    depth_map[0, theta_idx, phi_idx] = x
-    depth_map[1, theta_idx, phi_idx] = y
-    depth_map[2, theta_idx, phi_idx] = z
-    depth_map[3, theta_idx, phi_idx] = distance
-    depth_map[4, theta_idx, phi_idx] = intensity
-    return depth_map
-
-def test_xyz2range_v2():
-    kitti_info_path= "/home/gx/GitHub/second.pytorch/dataset/kitti_infos_val.pkl"
-    kitti_root_path= "/home/gx/GitHub/second.pytorch/dataset/"
-    fig_path = "output/"
-
-    dataset = KittiDataset(kitti_root_path, kitti_info_path)
-    for i in range(0,len(dataset)) :
-        # break
-        if i == 20:
-            break
-        item = dataset.get_sensor_data(i+8)
-        # print(input_dict)
-        points = item['lidar']['points']
-        range_map = xyz2range(points)
-        imageio.imwrite(fig_path + 'range_map_{:d}.jpg'.format(i),
-            range_map.astype(np.uint8))
-        range_map = xyz2range_v2(points, i, visualize=True)
-        print("range map shape, ", range_map.shape)
-        # 换个方式，根据 np.diff  把点填到不同的行。
-        # 或者，用 max pooling ?
-        # if i == 2:
-        #     # plt.plot(ys, zs) #     fig, ax = plt.subplots() #     NPOINTS = len(ys)
-        #     MAP='viridis'
-        #     cm = plt.get_cmap(MAP)
-        #     ax.set_prop_cycle(color=[cm(1.*i/(NPOINTS-1)) for i in range(NPOINTS-1)])
-        #     for i in range(NPOINTS-1):
-        #         ax.plot(ys[i:i+2],zs[i:i+2], '.')
-        #     plt.xlabel('y')
-        #     plt.ylabel('z')
-        #     plt.savefig('yz.png')
-        if False:
-            # plot all dots
-            fig, ax = plt.subplots()
-            NPOINTS = len(thetas)
-            MAP='viridis'
-            cm = plt.get_cmap(MAP)
-            frac = 1./(NPOINTS-1)
-            ax.set_prop_cycle(color=[cm(i*frac) for i in range(NPOINTS-1)])
-            for k in range(NPOINTS-1):
-                ax.plot(phis[k:k+2],thetas[k:k+2], '.', markersize=1)
-            plt.xlabel('phi')
-            plt.ylabel('theta')
-            plt.savefig(fig_path + 'phi-theta-{:d}.jpg'.format(i), dpi=300)
-        # if i == 2:
-        #     BINS= 4000
-        #     fig, ax = plt.subplots()
-        #     ax.hist(thetas, BINS,cumulative=True )
-        #     ax.set_xlabel("points")
-        #     ax.set_ylabel("thetas accumulate")
-        #     plt.savefig(fig_path + 'thetas-hist.jpg', dpi=300)
-        #     fig, ax = plt.subplots()
-        #     ax.hist(phis, BINS,cumulative=True )
-        #     ax.set_xlabel("points")
-        #     ax.set_ylabel("phis accumulate")
-        #     plt.savefig(fig_path + 'phis-hist.jpg', dpi=300)
-                # in_channels,
-                # out_channels,
-                # kernel_size,
-                # stride=1,
-                # paddding=0,
-                # dilatoin=1,
-                # groups=1,
-        # Depth convolution
 
 def _calculate_fan_in_and_fan_out_hwio(tensor):
     dimensions = tensor.ndimension()
