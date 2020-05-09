@@ -17,6 +17,14 @@ message AnchorGeneratorRange {
   repeated float custom_values = 4;
 }
 
+message AnchorGeneratorSphereRange {
+  repeated float sizes = 1;
+  repeated float anchor_ranges = 2;
+  repeated float anchor_sphere_ranges = 3;
+  repeated float rotations = 4;
+  repeated float custom_values = 5;
+}
+
 message NoAnchor {
 }
 

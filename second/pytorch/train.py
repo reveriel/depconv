@@ -31,7 +31,8 @@ def example_convert_to_torch(example, dtype=torch.float32,
     device = device or torch.device("cuda:0")
     example_torch = {}
     float_names = [
-        "voxels", "anchors", "reg_targets", "reg_weights", "bev_map", "importance"
+        "voxels", "anchors", "reg_targets", "reg_weights", "bev_map", "importance",
+        "feature"
     ]
     for k, v in example.items():
         if k in float_names:

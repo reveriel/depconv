@@ -122,9 +122,10 @@ class AnchorGeneratorRange(AnchorGenerator):
         return len(self._custom_values)
 
 
-class AnchorGeneratorShpereRange(AnchorGenerator):
+class AnchorGeneratorSphereRange(AnchorGenerator):
     def __init__(self,
                  anchor_ranges,
+                 anchor_sphere_ranges,
                  sizes=[1.6, 3.9, 1.56],
                  rotations=[0, np.pi / 2],
                  class_name=None,
@@ -135,6 +136,7 @@ class AnchorGeneratorShpereRange(AnchorGenerator):
         super().__init__()
         self._sizes = sizes
         self._anchor_ranges = anchor_ranges
+        self._anchor_sphere_ranges = anchor_sphere_ranges
         self._rotations = rotations
         self._dtype = dtype
         self._class_name = class_name
@@ -154,8 +156,8 @@ class AnchorGeneratorShpereRange(AnchorGenerator):
 
     def generate(self, feature_map_size):
         print("feautres size", feature_map_size)
-        res = box_np_ops.create_anchors_3d_sphere(
-            feature_map_size, self._anchor_ranges, self._sizes,
+        res = box_np_ops.create_anchors_3d_sphere_range(
+            feature_map_size, self._anchor_sphere_ranges, self._sizes,
             self._rotations, self._dtype)
         print("res =", res.shape)
 

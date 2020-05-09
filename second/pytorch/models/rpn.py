@@ -383,6 +383,9 @@ class RPNBase(RPNNoHeadBase):
             final_num_filters = self._num_out_filters
         else:
             final_num_filters = sum(num_upsample_filters)
+        print("rpn debug, final_num_filters = ", final_num_filters)
+        print("rpn debug, num_cls = ", num_cls)
+        print("rpn debug, num_anchor_per_loc = ", num_anchor_per_loc)
         self.conv_cls = nn.Conv2d(final_num_filters, num_cls, 1)
         self.conv_box = nn.Conv2d(final_num_filters,
                                   num_anchor_per_loc * box_code_size, 1)

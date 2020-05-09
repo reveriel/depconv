@@ -2,7 +2,8 @@ import numpy as np
 
 from second.protos import box_coder_pb2
 from second.core.anchor_generator import (AnchorGeneratorStride,
-                                          AnchorGeneratorRange)
+                                          AnchorGeneratorRange,
+                                          AnchorGeneratorSphereRange)
 
 
 def build(class_cfg):
@@ -36,6 +37,18 @@ def build(class_cfg):
         ag = AnchorGeneratorRange(
             sizes=list(config.sizes),
             anchor_ranges=list(config.anchor_ranges),
+            rotations=list(config.rotations),
+            match_threshold=class_cfg.matched_threshold,
+            unmatch_threshold=class_cfg.unmatched_threshold,
+            class_name=class_cfg.class_name,
+            custom_values=list(config.custom_values))
+        return ag
+    elif ag_type == 'anchor_generator_sphere_range':
+        config = class_cfg.anchor_generator_sphere_range
+        ag = AnchorGeneratorSphereRange(
+            sizes=list(config.sizes),
+            anchor_ranges=list(config.anchor_ranges),
+            anchor_sphere_ranges=list(config.anchor_sphere_ranges),
             rotations=list(config.rotations),
             match_threshold=class_cfg.matched_threshold,
             unmatch_threshold=class_cfg.unmatched_threshold,

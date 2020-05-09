@@ -326,6 +326,7 @@ def prep_pointcloud(input_dict,
     metrics["voxel_gene_time"] = time.time() - t1
 
     example = {
+        'points': points, # for debug
         'voxels': voxels,
         'num_points': num_points,
         'coordinates': coordinates,

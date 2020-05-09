@@ -4,6 +4,10 @@
 
 import numpy as np
 
+
+# the resolution of the LiDAR is 0.09 dgree for 5Hz. At 10Hz, the resolution is around 0.1728 degree.
+# Ideally, W comes out to be 520
+
 def xyz2range(points):
     """ convert points to depth map
         devide evenly.

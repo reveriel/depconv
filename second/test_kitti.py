@@ -29,53 +29,6 @@ class DepImage:
         self.depth = depth
         self.thickness = thickness
 
-def save_2d_jpg(feature, name:str):
-    """
-    save a 2d feature map to image file
-    depth : tensor of shape (H, W)
-    """
-    save_depth_jpg(feature, name)
-
-def xyz2range(points):
-    """ convert points to depth map
-        devide evenly, not wokring very well
-    """
-    shape = points.shape
-    print("shape = ", shape)
-    x = points[:, 0]  # -71~73
-    y = points[:, 1]  # -21~53
-    z = points[:, 2]  # -5~2.6
-    intensity = points[:, 3]  # 0~1
-    # convert xyz to theta-phi-r
-    x2y2 = np.square(x)  + np.square(y)
-    distance = np.sqrt(x2y2 + np.square(z))
-    distance[distance == 0] = 1e-6
-    thetas = np.arcsin(z / distance)
-    phis = np.arcsin(-y / np.sqrt(x2y2))
-    # print("min thetas = ", np.min(thetas))
-    # print("max theats = ", np.max(thetas))
-    # print("min phis = ", np.min(phis))
-    # print("max phis = ", np.max(phis))
-    # delta_phi = np.radians(90./512.)
-    delta_phi = (np.max(phis) - np.min(phis)) / 511.
-    # veldyne , resolution 26.8  vertical,
-    # delta_theta = np.radians(26.8/64)
-    delta_theta = (np.max(thetas) - np.min(thetas)) / 64.
-    theta_idx = ((thetas - np.min(thetas)) / delta_theta).astype(int)
-    phi_idx = ((phis - np.min(phis)) / delta_phi).astype(int)
-    print("theta_idx = ", theta_idx)
-    print("phi_idx = ", phi_idx)
-    reflect_gray = (intensity * 255).astype(int)
-    print("reflect_gray = ", reflect_gray)
-    distance_gray = np.interp(distance, (distance.min(), distance.max()),
-                             (50,255))
-    H = 64
-    W = 512
-    C = 5
-    range_map = np.zeros((C, H, W))
-    range_map[63 - theta_idx,phi_idx,0] = distance_gray
-    return range_map
-
 
 def _calculate_fan_in_and_fan_out_hwio(tensor):
     dimensions = tensor.ndimension()
@@ -150,7 +103,7 @@ class DepConv3D(nn.Module):
 
         return out_tensor
 
-def init_depth_from_feature(feature, k):
+def init_depth_from_feature(feature, k, range=[0, 70]):
     """
         return a depth tensor of shape (B, H, W)
         max depth be 'k-1'
@@ -160,8 +113,9 @@ def init_depth_from_feature(feature, k):
             C = 5
     """
     r = feature[:, 3, :, :]
-    depth = ((r - r.min()) * (k-1) / (r.max()- r.min())).long()
-    # depth = k-depth # ????
+    depth = ((r - range[0]) * (k-1) / (range[1]- range[0])).long()
+    # some are out of range
+    depth[depth >= k] = k-1
     return depth
 
 class ConvNet(nn.Module):
@@ -1241,6 +1195,7 @@ class DepConvNet3(nn.Module):
 
         with torch.no_grad():
             depth = init_depth_from_feature(feature, 512)
+        print("1 depth max min=", depth.max(), depth.min())
 
         # with torch.no_grad():
         #     print("depth.shape, depth.shape")
@@ -1275,8 +1230,9 @@ class DepConvNet3(nn.Module):
         # x = self.bn16(x)
         # x = F.relu(x)
         xs = self.conv5([x], depth)
-        depth = F.max_pool2d(depth.float(), 3, padding=1, stride=(2,2)).long()
+        depth = F.avg_pool2d(depth.float(), 1, padding=0, stride=(2,2)).long()
         depth = depth // 2
+        print("2 depth max min=", depth.max(), depth.min())
         xs = [ self.bn5(x) for x in xs]
         xs = [F.relu(x) for x in xs]
         xs = self.conv6(xs, depth)
@@ -1291,8 +1247,9 @@ class DepConvNet3(nn.Module):
         # x = self.bn8(x)
         # x = F.relu(x)
         xs = self.conv9(xs, depth)
-        depth = F.max_pool2d(depth.float(), 3, padding=1, stride=(2,2)).long()
+        depth = F.avg_pool2d(depth.float(), 1, padding=0, stride=(2,2)).long()
         depth = depth // 2
+        print("3 depth max min=", depth.max(), depth.min())
 
         xs = [self.bn9(x) for x in xs]
         xs = [F.relu(x) for x in xs]
@@ -1308,8 +1265,9 @@ class DepConvNet3(nn.Module):
         xs = [self.bn22(x) for x in xs]
         xs = [F.relu(x) for x in xs]
         xs = self.conv11(xs, depth)
-        depth = F.max_pool2d(depth.float(), 3, padding=1, stride=(2,2)).long()
+        depth = F.avg_pool2d(depth.float(), 1, padding=0, stride=(2,2)).long()
         depth = depth // 2
+        print("4 depth max min=", depth.max(), depth.min())
         xs = [self.bn11(x) for x in xs]
         xs = [F.relu(x) for x in xs]
         xs = self.conv12(xs, depth)
@@ -1323,11 +1281,11 @@ class DepConvNet3(nn.Module):
         # x = self.bn14(x)
         # x = F.relu(x)
         xs = self.conv15(xs, depth)
-        depth = F.max_pool2d(depth.float(), 3, padding=1, stride=(2,1)).long()
+        depth = F.avg_pool2d(depth.float(), (1,1), padding=0, stride=(2,1)).long()
         xs = [self.bn15(x) for x in xs]
         xs = [F.relu(x) for x in xs]
         xs = self.conv16(xs, depth)
-        depth = F.max_pool2d(depth.float(), 3, padding=1, stride=(2,1)).long()
+        depth = F.avg_pool2d(depth.float(), (1,1), padding=0, stride=(2,1)).long()
         xs = [self.bn16(x) for x in xs]
         xs = [F.relu(x) for x in xs]
         # x = self.conv17(x, depth)
@@ -1335,6 +1293,7 @@ class DepConvNet3(nn.Module):
         # x = self.bn17(x)
         # x = F.relu(x)
 
+        print("5 depth max min=", depth.max(), depth.min())
         x = depth_to_3D_v2(xs, depth, 64)
         B, C, D, H, W = x.shape
         # with torch.no_grad():
@@ -1343,4 +1302,4 @@ class DepConvNet3(nn.Module):
         #         save_2d_jpg(x[0][c].sum(dim=0), "bevmap-%d.jpg"%(c))
 
         print("shape BCDHW, ", B,C,D,H,W)
-        return x.permute(0,1,3,2,4).reshape(B, C*H, D, W)
+        return x.permute(0,1,3,4,2).reshape(B, C*H, W, D)

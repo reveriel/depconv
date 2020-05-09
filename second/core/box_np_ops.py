@@ -638,7 +638,7 @@ def create_anchors_3d_range(feature_size,
     return res
 
 def create_anchors_3d_sphere_range(feature_size,
-                            anchor_range,
+                            anchor_range=[0, 70, -0.7853981633974483, +0.7853981633974483],
                             sizes=[1.6, 3.9, 1.56],
                             rotations=[0, np.pi / 2],
                             dtype=np.float32):
@@ -646,6 +646,9 @@ def create_anchors_3d_sphere_range(feature_size,
     Args:
         feature_size: list [D, H, W](zyx)
         sizes: [N, 3] list of list or array, size of anchors, xyz
+
+        anchor_range: [4], r_min, r_max, phi_min, phi_max
+            fix z = -1
 
     Returns:
         anchors: [*feature_size, num_sizes, num_rots, 7] tensor.
@@ -655,16 +658,28 @@ def create_anchors_3d_sphere_range(feature_size,
     #     anchor_range[0], anchor_range[]
     # )
 
-    z_centers = np.linspace(
-        anchor_range[2], anchor_range[5], feature_size[0], dtype=dtype)
-    y_centers = np.linspace(
-        anchor_range[1], anchor_range[4], feature_size[1], dtype=dtype)
-    x_centers = np.linspace(
-        anchor_range[0], anchor_range[3], feature_size[2], dtype=dtype)
+    r_centers = np.linspace(
+        anchor_range[0], anchor_range[1], feature_size[2], dtype=dtype)
+    phi_centers = np.linspace(
+        anchor_range[2], anchor_range[3], feature_size[1], dtype=dtype)
+
+    z_centers = np.linspace( -1 , -1, 1, dtype=dtype)
+    # y_centers = np.linspace(
+    #     anchor_range[1], anchor_range[4], feature_size[1], dtype=dtype)
+    # x_centers = np.linspace(
+    #     anchor_range[0], anchor_range[3], feature_size[2], dtype=dtype)
+
+
     sizes = np.reshape(np.array(sizes, dtype=dtype), [-1, 3])
     rotations = np.array(rotations, dtype=dtype)
     rets = np.meshgrid(
-        x_centers, y_centers, z_centers, rotations, indexing='ij')
+        r_centers, phi_centers, z_centers, rotations, indexing='ij')
+
+    X = rets[0] * np.cos(rets[1])
+    Y = rets[0] * np.sin(rets[1])
+    rets[0] = X
+    rets[1] = Y
+
     tile_shape = [1] * 5
     tile_shape[-2] = int(sizes.shape[0])
     for i in range(len(rets)):
