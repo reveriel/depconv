@@ -16,7 +16,7 @@ from second.pytorch.models import middle, pointpillars, rpn, voxel_encoder
 from torchplus import metrics
 from second.pytorch.utils import torch_timer
 
-from second.test_kitti import DepConvNet, ConvNet, DepConvNet2, DepConvNet3
+from second.sphere.model import DepConvNet3
 
 def _get_pos_neg_loss(cls_loss, labels):
     # cls_loss: [N, num_anchors, num_class]
