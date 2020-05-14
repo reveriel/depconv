@@ -202,11 +202,11 @@ class DepConvNet3(nn.Module):
         # self.bn4 = BatchNorm2d(16)
         # self.conv16 = DepConv3D(16, 16, 3, padding=1)
         # self.bn16 = BatchNorm2d(16)
-        self.conv5 = DepConv3D_v2(16, 32, 3, 2, padding=1, subm=True) # 256 * 32 * 128
+        self.conv5 = DepConv3D_v2(16, 32, 3, (2,2,2), padding=1, subm=True) # 256 * 32 * 128
         self.bn5 = BatchNorm2d(32)
         self.conv6 = DepConv3D_v2(32, 32, 3, padding=1, subm=False)
         self.bn6 = BatchNorm2d(32)
-        self.conv7 = DepConv3D_v2(32, 32, 3, padding=1, subm=False)
+        self.conv7 = DepConv3D_v2(32, 32, 3, padding=1, subm=True)
         self.bn7 = BatchNorm2d(32)
         # self.conv8 = DepConv3D(32, 32, 3, padding=1)
         # self.bn8 = BatchNorm2d(32)
@@ -218,7 +218,7 @@ class DepConvNet3(nn.Module):
         self.bn21 = BatchNorm2d(64)
         self.conv22 = DepConv3D_v2(64, 64, 3, padding=1, subm=False)
         self.bn22 = BatchNorm2d(64)
-        self.conv11 = DepConv3D_v2(64, 64, 3, (2,2,2), padding=1, subm=True)# 64, 16, 64
+        self.conv11 = DepConv3D_v2(64, 64, 3, (2,1,2), padding=1, subm=True)# 64, 16, 64
         self.bn11 = BatchNorm2d(64)
         self.conv12 = DepConv3D_v2(64, 64, 3, padding=1, subm=False) # 8 * 32 * 64
         self.bn12 = BatchNorm2d(64)
@@ -226,9 +226,9 @@ class DepConvNet3(nn.Module):
         self.bn13 = BatchNorm2d(64)
         # self.conv14 = DepConv3D(64, 64, 3, padding=1) # 2
         # self.bn14 = BatchNorm2d(64)
-        self.conv15 = DepConv3D_v2(64, 64, 3, (1,2,1), padding=1,subm=False)
+        self.conv15 = DepConv3D_v2(64, 64, 3, (1,1,1), padding=1,subm=False)
         self.bn15 = BatchNorm2d(64)
-        self.conv16 = DepConv3D_v2(64, 64, 3, (1,2,1), padding=1,subm=False)
+        self.conv16 = DepConv3D_v2(64, 64, 3, (1,1,1), padding=1,subm=False)
         self.bn16 = BatchNorm2d(64)
         # self.conv17 = DepConv3D(64, 64, 3, (1,2,1), padding=1)
         # self.bn17 = BatchNorm2d(64)
@@ -243,6 +243,9 @@ class DepConvNet3(nn.Module):
         with torch.no_grad():
             depth = init_depth_from_feature(feature, 512)
         print("1 depth max min=", depth.max(), depth.min())
+
+        ## remove black dots(missing beems
+        depth = F.max_pool2d(depth, 3, padding=1, stride=1)
 
         # with torch.no_grad():
         #     print("depth.shape, depth.shape")
@@ -312,7 +315,7 @@ class DepConvNet3(nn.Module):
         xs = [self.bn22(x) for x in xs]
         xs = [F.relu(x) for x in xs]
         xs = self.conv11(xs, depth)
-        depth = F.avg_pool2d(depth, 2, padding=0, stride=(2,2))
+        depth = F.avg_pool2d(depth, (1,2), padding=0, stride=(1,2))
         depth = depth / 2
         print("4 depth max min=", depth.max(), depth.min())
         xs = [self.bn11(x) for x in xs]
@@ -328,11 +331,11 @@ class DepConvNet3(nn.Module):
         # x = self.bn14(x)
         # x = F.relu(x)
         xs = self.conv15(xs, depth)
-        depth = F.avg_pool2d(depth, (2,1), padding=0, stride=(2,1))
+        # depth = F.avg_pool2d(depth, (2,1), padding=0, stride=(1,1))
         xs = [self.bn15(x) for x in xs]
         xs = [F.relu(x) for x in xs]
         xs = self.conv16(xs, depth)
-        depth = F.avg_pool2d(depth, (2,1), padding=0, stride=(2,1))
+        # depth = F.avg_pool2d(depth, (2,1), padding=0, stride=(1,1))
         xs = [self.bn16(x) for x in xs]
         xs = [F.relu(x) for x in xs]
         # x = self.conv17(x, depth)
@@ -342,6 +345,141 @@ class DepConvNet3(nn.Module):
 
         print("5 depth max min=", depth.max(), depth.min())
         x = depth_to_3D_v2(xs, depth, 64)
+        x = x.sum(dim=3, keepdim=True)
+        B, C, D, H, W = x.shape
+        # with torch.no_grad():
+        #     # f =
+        #     for c in range(C):
+        #         save_2d_jpg(x[0][c].sum(dim=0), "bevmap-%d.jpg"%(c))
+
+
+        print("shape BCDHW, ", B,C,D,H,W)
+        return x.permute(0,1,3,4,2).reshape(B, C*H, W, D)
+
+
+
+class ConvNet(nn.Module):
+    def __init__(self, num_input_features, use_norm=True):
+        super(ConvNet, self).__init__()
+        if use_norm:
+            BatchNorm2d = change_default_args(
+                eps=1e-3, momentum=0.01)(nn.BatchNorm3d)
+            BatchNorm1d = change_default_args(
+                eps=1e-3, momentum=0.01)(nn.BatchNorm1d)
+            Conv2d = change_default_args(bias=False)(nn.Conv2d)
+        else:
+            BatchNorm2d = nn.Empty
+            BatchNorm1d = nn.Empty
+            Conv2d = change_default_args(bias=True)(nn.Conv2d)
+
+        self.conv1 = nn.Conv3d(num_input_features, 16, 3, padding=1)
+        self.bn1 = BatchNorm2d(16)
+        self.conv2 = nn.Conv3d(16, 16, 3, padding=1)
+        self.bn2 = BatchNorm2d(16)
+        # self.conv3 = DepConv3D(16, 16, 3, padding=1) # 512 * 64 * 256
+        # self.bn3 = BatchNorm2d(16)
+        # self.conv4 = DepConv3D(16, 16, 3, padding=1)
+        # self.bn4 = BatchNorm2d(16)
+        # self.conv16 = DepConv3D(16, 16, 3, padding=1)
+        # self.bn16 = BatchNorm2d(16)
+        self.conv5 = nn.Conv3d(16, 32, 3, 2, padding=1) # 256 * 32 * 128
+        self.bn5 = BatchNorm2d(32)
+        self.conv6 = nn.Conv3d(32, 32, 3, padding=1)
+        self.bn6 = BatchNorm2d(32)
+        self.conv7 = nn.Conv3d(32, 32, 3, padding=1)
+        self.bn7 = BatchNorm2d(32)
+        # self.conv8 = DepConv3D(32, 32, 3, padding=1)
+        # self.bn8 = BatchNorm2d(32)
+        self.conv9 = nn.Conv3d(32, 64, 3, (2,2,2), padding=1) # 128, 32, 64
+        self.bn9 = BatchNorm2d(64)
+        self.conv20 = nn.Conv3d(64, 64, 3, padding=1)
+        self.bn20 = BatchNorm2d(64)
+        self.conv21 = nn.Conv3d(64, 64, 3, padding=1)
+        self.bn21 = BatchNorm2d(64)
+        self.conv22 = nn.Conv3d(64, 64, 3, padding=1)
+        self.bn22 = BatchNorm2d(64)
+        self.conv11 = nn.Conv3d(64, 64, 3, (1,2,2), padding=1)# 64, 16, 64
+        self.bn11 = BatchNorm2d(64)
+        self.conv12 = nn.Conv3d(64, 64, 3, padding=1) # 8 * 32 * 64
+        self.bn12 = BatchNorm2d(64)
+        self.conv13 = nn.Conv3d(64, 64, 3, padding=1) # 4
+        self.bn13 = BatchNorm2d(64)
+        # self.conv14 = DepConv3d(64, 64, 3, padding=1) # 2
+        # self.bn14 = BatchNorm2d(64)
+        self.conv15 = nn.Conv3d(64, 64, 3, (1,2,1), padding=1)
+        self.bn15 = BatchNorm2d(64)
+        self.conv16 = nn.Conv3d(64, 64, 3, (1,2,1), padding=1)
+        self.bn16 = BatchNorm2d(64)
+        # self.conv17 = DepConv3d(64, 64, 3, (1,2,1), padding=1)
+        # self.bn17 = BatchNorm2d(64)
+
+
+    def forward(self, feature):
+
+        if feature.dim() == 3:
+            feature = feature.unsqueeze(0)
+
+        with torch.no_grad():
+            depth = init_depth_from_feature(feature, 256)
+        print("1 depth max min=", depth.max(), depth.min())
+
+        ## remove black dots(missing beems
+        # depth = F.max_pool2d(depth, 3, padding=1, stride=1)
+        x = depth_to_3D(feature, depth.long(), D=256)
+
+
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = F.relu(x)
+        # depthmap_bev(x, depth)
+
+        x = self.conv2(x)
+        x = self.bn2(x)
+        x = F.relu(x)
+
+        x = self.conv5(x)
+        x = self.bn5(x)
+        x = F.relu(x)
+        x = self.conv6(x)
+        x = self.bn6(x)
+        x = F.relu(x)
+        x = self.conv7(x)
+        x = self.bn7(x)
+        x = F.relu(x)
+        x = self.conv9(x)
+
+        x = self.bn9(x)
+        x = F.relu(x)
+        x = self.conv20(x)
+        x = self.bn20(x)
+        x = F.relu(x)
+        x = self.conv21(x)
+        x = self.bn21(x)
+        x = F.relu(x)
+        x = self.conv22(x)
+        x = self.bn22(x)
+        x = F.relu(x)
+        x = self.conv11(x)
+        x = self.bn11(x)
+        x = F.relu(x)
+        x = self.conv12(x)
+        x = self.bn12(x)
+        x = F.relu(x)
+        x = self.conv13(x)
+        x = self.bn13(x)
+        x = F.relu(x)
+        x = self.conv15(x)
+        x = self.bn15(x)
+        x = F.relu(x)
+        x = self.conv16(x)
+        x = self.bn16(x)
+        x = F.relu(x)
+        # x = self.conv17(x, depth)
+        # depth = F.max_pool2d(depth.float(), 3, padding=1, stride=(2,1)).long()
+        # x = self.bn17(x)
+        # x = F.relu(x)
+
+        # x = x.sum(dim=3, keepdim=True)
         B, C, D, H, W = x.shape
         # with torch.no_grad():
         #     # f =
@@ -350,3 +488,6 @@ class DepConvNet3(nn.Module):
 
         print("shape BCDHW, ", B,C,D,H,W)
         return x.permute(0,1,3,4,2).reshape(B, C*H, W, D)
+
+
+

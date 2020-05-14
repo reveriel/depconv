@@ -29,6 +29,7 @@ def build(model_cfg: second_pb2.VoxelNet, voxel_generator,
     vfe_with_distance = model_cfg.voxel_feature_extractor.with_distance
     grid_size = voxel_generator.grid_size
     dense_shape = [1] + grid_size[::-1].tolist() + [vfe_num_filters[-1]]
+    print("dense_shape = ", dense_shape)
     classes_cfg = model_cfg.target_assigner.class_settings
     num_class = len(classes_cfg)
     use_mcnms = [c.use_multi_class_nms for c in classes_cfg]
@@ -60,7 +61,7 @@ def build(model_cfg: second_pb2.VoxelNet, voxel_generator,
         assert all([e == nms_post_max_sizes[0] for e in nms_post_max_sizes])
         assert all([e == nms_score_thresholds[0] for e in nms_score_thresholds])
         assert all([e == nms_iou_thresholds[0] for e in nms_iou_thresholds])
-    
+
     num_input_features = model_cfg.num_point_features
     loss_norm_type_dict = {
         0: LossNormType.NormByNumExamples,

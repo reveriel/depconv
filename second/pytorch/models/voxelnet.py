@@ -16,7 +16,7 @@ from second.pytorch.models import middle, pointpillars, rpn, voxel_encoder
 from torchplus import metrics
 from second.pytorch.utils import torch_timer
 
-from second.sphere.model import DepConvNet3
+from second.sphere.model import DepConvNet3, ConvNet
 
 def _get_pos_neg_loss(cls_loss, labels):
     # cls_loss: [N, num_anchors, num_class]
@@ -140,21 +140,22 @@ class VoxelNet(nn.Module):
         self._nms_class_agnostic = nms_class_agnostic
         self._num_direction_bins = num_direction_bins
         self._dir_limit_offset = direction_limit_offset
-        # self.voxel_feature_extractor = voxel_encoder.get_vfe_class(vfe_class_name)(
-        #     num_input_features,
-        #     use_norm,
-        #     num_filters=vfe_num_filters,
-        #     with_distance=with_distance,
-        #     voxel_size=self.voxel_generator.voxel_size,
-        #     pc_range=self.voxel_generator.point_cloud_range,
-        # )
-        # self.middle_feature_extractor = middle.get_middle_class(middle_class_name)(
-        #     output_shape,
-        #     use_norm,
-        #     num_input_features=middle_num_input_features,
-        #     num_filters_down1=middle_num_filters_d1,
-        #     num_filters_down2=middle_num_filters_d2)
-        self.feature_extractor = DepConvNet3(5)
+        self.voxel_feature_extractor = voxel_encoder.get_vfe_class(vfe_class_name)(
+            num_input_features,
+            use_norm,
+            num_filters=vfe_num_filters,
+            with_distance=with_distance,
+            voxel_size=self.voxel_generator.voxel_size,
+            pc_range=self.voxel_generator.point_cloud_range,
+        )
+        self.middle_feature_extractor = middle.get_middle_class(middle_class_name)(
+            output_shape,
+            use_norm,
+            num_input_features=middle_num_input_features,
+            num_filters_down1=middle_num_filters_d1,
+            num_filters_down2=middle_num_filters_d2)
+        # self.feature_extractor = DepConvNet3(5)
+        # self.feature_extractor = ConvNet(5)
 
         self.rpn = rpn.get_rpn_class(rpn_class_name)(
             use_norm=True,
@@ -314,7 +315,8 @@ class VoxelNet(nn.Module):
             res["dir_loss_reduced"] = dir_loss
         return res
 
-    def network_forward(self, feature, batch_size):
+    # def network_forward(self, feature, batch_size):
+    def network_forward(self, voxels, num_points, coors, batch_size):
         """this function is used for subclass.
         you can add custom network architecture by subclass VoxelNet class
         and override this function.
@@ -325,14 +327,14 @@ class VoxelNet(nn.Module):
                 dir_cls_preds: ...
             }
         """
-        # self.start_timer("voxel_feature_extractor")
-        # voxel_features = self.voxel_feature_extractor(voxels, num_points,
-        #                                               coors)
-        # self.end_timer("voxel_feature_extractor")
+        self.start_timer("voxel_feature_extractor")
+        voxel_features = self.voxel_feature_extractor(voxels, num_points,
+                                                      coors)
+        self.end_timer("voxel_feature_extractor")
         self.start_timer("middle forward")
-        # spatial_features = self.middle_feature_extractor(
-        #     voxel_features, coors, batch_size)
-        spatial_features = self.feature_extractor(feature)
+        spatial_features = self.middle_feature_extractor(
+            voxel_features, coors, batch_size)
+        # spatial_features = self.feature_extractor(feature)
         self.end_timer("middle forward")
         self.start_timer("rpn forward")
         preds_dict = self.rpn(spatial_features)
@@ -342,32 +344,36 @@ class VoxelNet(nn.Module):
     def forward(self, example):
         """module's forward should always accept dict and return loss.
         """
-        # voxels = example["voxels"]
-        # num_points = example["num_points"]
-        # coors = example["coordinates"]
-        feature = example["feature"]
-        feature = torch.tensor(feature, device="cuda", dtype=torch.float32)
-        # if len(num_points.shape) == 2:  # multi-gpu
-        #     num_voxel_per_batch = example["num_voxels"].cpu().numpy().reshape(
-        #         -1)
-        #     voxel_list = []
-        #     num_points_list = []
-        #     coors_list = []
-        #     for i, num_voxel in enumerate(num_voxel_per_batch):
-        #         voxel_list.append(voxels[i, :num_voxel])
-        #         num_points_list.append(num_points[i, :num_voxel])
-        #         coors_list.append(coors[i, :num_voxel])
-        #     voxels = torch.cat(voxel_list, dim=0)
-        #     num_points = torch.cat(num_points_list, dim=0)
-        #     coors = torch.cat(coors_list, dim=0)
+        voxels = example["voxels"]
+        num_points = example["num_points"]
+        coors = example["coordinates"]
+        # feature = example["feature"]
+        # feature = torch.tensor(feature, device="cuda", dtype=torch.float32)
+        if len(num_points.shape) == 2:  # multi-gpu
+            num_voxel_per_batch = example["num_voxels"].cpu().numpy().reshape(
+                -1)
+            voxel_list = []
+            num_points_list = []
+            coors_list = []
+            for i, num_voxel in enumerate(num_voxel_per_batch):
+                voxel_list.append(voxels[i, :num_voxel])
+                num_points_list.append(num_points[i, :num_voxel])
+                coors_list.append(coors[i, :num_voxel])
+            voxels = torch.cat(voxel_list, dim=0)
+            num_points = torch.cat(num_points_list, dim=0)
+            coors = torch.cat(coors_list, dim=0)
+            coors[:,0] -= coors[:,0].min()
+            # print("voxels shape = ", voxels.shape)
+            # print("coors shape = ", coors.shape)
+            # print("num_points shape = ", num_points.shape)
         batch_anchors = example["anchors"]
         # print("batch anchor shpae", batch_anchors.shape)
         batch_size_dev = batch_anchors.shape[0]
         # features: [num_voxels, max_num_points_per_voxel, 7]
         # num_points: [num_voxels]
         # coors: [num_voxels, 4]
-        # preds_dict = self.network_forward(voxels, num_points, coors, batch_size_dev)
-        preds_dict = self.network_forward(feature, batch_size_dev)
+        preds_dict = self.network_forward(voxels, num_points, coors, batch_size_dev)
+        # preds_dict = self.network_forward(feature, batch_size_dev)
 
         # need to check size.
         box_preds = preds_dict["box_preds"].view(batch_size_dev, -1, self._box_coder.code_size)

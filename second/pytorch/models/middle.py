@@ -124,8 +124,8 @@ class SpMiddleFHD(nn.Module):
             BatchNorm1d = change_default_args(
                 eps=1e-3, momentum=0.01)(nn.BatchNorm1d)
             Conv2d = change_default_args(bias=False)(nn.Conv2d)
-            SpConv3d = change_default_args(bias=False)(spconv.SparseConv3d)
-            SubMConv3d = change_default_args(bias=False)(spconv.SubMConv3d)
+            SpConv3d = change_default_args(bias=False, use_hash=False)(spconv.SparseConv3d)
+            SubMConv3d = change_default_args(bias=False, use_hash=False)(spconv.SubMConv3d)
             ConvTranspose2d = change_default_args(bias=False)(
                 nn.ConvTranspose2d)
         else:
@@ -208,6 +208,7 @@ class SpMiddleFHD(nn.Module):
         ret = ret.dense()
 
         N, C, D, H, W = ret.shape
+        print("NCDHW = ", N,C,D,H,W)
         ret = ret.view(N, C * D, H, W)
         return ret
 

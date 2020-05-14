@@ -3,7 +3,7 @@
 # from xyz to range iamge
 
 import numpy as np
-
+from spconv.utils import points_to_voxel_3d_sphere_np
 
 # the resolution of the LiDAR is 0.09 dgree for 5Hz. At 10Hz, the resolution is around 0.1728 degree.
 # Ideally, W comes out to be 520
@@ -49,7 +49,7 @@ def xyz2range(points):
     # print("out of range count =", np.sum(theta_idx >= 64))
     theta_idx[theta_idx >= 64] = 63
     # '-'phis since the direction of increasing phi is oppsosite to y on image.
-    phi_idx = (-phis / delta_phi + 256).astype(int)
+    phi_idx = (phis / delta_phi + 256).astype(int)
 
     H = 64
     W = 512
@@ -118,3 +118,101 @@ def xyz2range_v2(points, ith=0):
     depth_map[3, theta_idx, phi_idx] = r
     depth_map[4, theta_idx, phi_idx] = intensity
     return depth_map
+
+
+class VoxelGeneratorV3:
+    def __init__(self,
+                 voxel_size,
+                 point_cloud_range,
+                 max_num_points,
+                 max_voxels=30000):
+        point_cloud_range = np.array(point_cloud_range, dtype=np.float32)
+        voxel_size = np.array(voxel_size, dtype=np.float32)
+        grid_size = np.array([512, 512, 63])  # r, phi, theta
+        voxelmap_shape = np.array([512,512,63])[::-1]
+
+        self._max_voxels = max_voxels
+        self._max_ponts = 1
+
+        self._coor_to_voxelidx = np.full(voxelmap_shape, -1, dtype=np.int32)
+        self._voxel_size = voxel_size
+        self._point_cloud_range = point_cloud_range
+        self._max_num_points = max_num_points
+        self._max_voxels = max_voxels
+        self._grid_size = grid_size
+        # self._full_mean = full_mean
+
+    def generate(self, points, max_voxels):
+        res = points_to_voxel_v2(
+            points,
+            self._voxel_size[[0]],
+            self._point_cloud_range[[0,3]],
+            self._coor_to_voxelidx,
+            self._max_num_points, max_voxels or self._max_voxels)
+
+        for k, v in res.items():
+            if k != "voxel_num":
+                res[k] = v[:res["voxel_num"]]
+        return res
+
+    def generate_multi_gpu(self, points, max_voxels=None):
+        res = points_to_voxel_v2(points,
+            self._voxel_size[[0]],
+            self._point_cloud_range[[0,3]],
+            self._coor_to_voxelidx,
+            self._max_num_points, max_voxels or self._max_voxels,
+            pad_output=True
+            )
+        # print("res voels .shape  = ", res["voxels"].shape)
+        return res
+
+    @property
+    def voxel_size(self):
+        return self._voxel_size
+
+    @property
+    def max_num_points_per_voxel(self):
+        return self._max_num_points
+
+    @property
+    def point_cloud_range(self):
+        return self._point_cloud_range
+
+    @property
+    def grid_size(self):
+        return self._grid_size
+
+
+def points_to_voxel_v2(points,
+                    voxel_size,
+                    coors_range,
+                    coor_to_voxelidx,
+                    max_points=1,
+                    max_voxels=30000,
+                    pad_output=False):
+
+    # voxelmap_shape = np.array([512,512,64])
+    num_points_per_voxel = np.zeros(shape=(max_voxels,), dtype=np.int32)
+    voxels = np.zeros(
+        shape=(max_voxels, max_points, points.shape[-1]), dtype=points.dtype)
+
+    voxel_point_mask = np.zeros(
+        shape=(max_voxels, max_points), dtype=points.dtype)
+
+    coors = np.zeros(shape=(max_voxels, 3), dtype=np.int32)
+    res = {
+        "voxels": voxels,
+        "coordinates": coors,
+        "num_points_per_voxel": num_points_per_voxel,
+        "voxel_point_mask": voxel_point_mask,
+    }
+
+    voxel_num = points_to_voxel_3d_sphere_np(
+        points, voxels, voxel_point_mask, coors,
+        num_points_per_voxel, coor_to_voxelidx, voxel_size.tolist(),
+        coors_range.tolist(), max_points, max_voxels)
+
+    res["voxel_num"] = voxel_num
+    res["voxel_point_mask"] = res["voxel_point_mask"].reshape(
+        -1, max_points, 1)
+    return res

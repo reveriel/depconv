@@ -496,7 +496,7 @@ def depth_to_3D(feature, depth, D=0):
     D_min, D_max = depth.min(), depth.max()
     print("D_min, D_max= ", D_min, D_max)
     if D == 0:
-        D = D_max - D_min + 1
+        D = int(D_max - D_min + 1)
     B, C, H, W = feature.shape
     device = feature.get_device()
     ret_tensor = torch.zeros(B, C, D, H, W, device=device)

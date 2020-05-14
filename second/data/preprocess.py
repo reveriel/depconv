@@ -29,6 +29,7 @@ def merge_second_batch(batch_list):
     for key, elems in example_merged.items():
         if key in [
                 'voxels', 'num_points', 'num_gt', 'voxel_labels', 'gt_names', 'gt_classes', 'gt_boxes'
+                ,'points'
         ]:
             ret[key] = np.concatenate(elems, axis=0)
         elif key == 'metadata':
@@ -52,6 +53,8 @@ def merge_second_batch(batch_list):
             ret[key] = np.concatenate(coors, axis=0)
         elif key == 'metrics':
             ret[key] = elems
+        elif key in ['points']:
+            continue
         else:
             ret[key] = np.stack(elems, axis=0)
     return ret
@@ -82,7 +85,7 @@ def merge_second_batch_multigpu(batch_list):
                     coor, ((0, 0), (1, 0)), mode='constant', constant_values=i)
                 coors.append(coor_pad)
             ret[key] = np.stack(coors, axis=0)
-        elif key in ['gt_names', 'gt_classes', 'gt_boxes']:
+        elif key in ['gt_names', 'gt_classes', 'gt_boxes', 'points']:
             continue
         else:
             ret[key] = np.stack(elems, axis=0)
@@ -321,7 +324,7 @@ def prep_pointcloud(input_dict,
             num_points = res["num_points_per_voxel"]
             num_voxels = np.array([res["voxel_num"]], dtype=np.int64)
 
-    feature = xyz2range(points)
+    # feature = xyz2range(points)
 
     metrics["voxel_gene_time"] = time.time() - t1
 
@@ -336,7 +339,7 @@ def prep_pointcloud(input_dict,
 
     # example = {
         # "metrics": metrics,
-        "feature": feature,
+        # "feature": feature,
     }
 
     if calib is not None:
