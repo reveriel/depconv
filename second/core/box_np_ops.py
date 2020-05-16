@@ -675,6 +675,7 @@ def create_anchors_3d_sphere_range(feature_size,
     rets = np.meshgrid(
         r_centers, phi_centers, z_centers, rotations, indexing='ij')
 
+    rets[3] += rets[1]
     X = rets[0] * np.cos(rets[1])
     Y = rets[0] * np.sin(rets[1])
     rets[0] = X
