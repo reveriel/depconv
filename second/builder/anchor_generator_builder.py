@@ -50,6 +50,7 @@ def build(class_cfg):
             anchor_ranges=list(config.anchor_ranges),
             anchor_sphere_ranges=list(config.anchor_sphere_ranges),
             rotations=list(config.rotations),
+            exp=config.exp,
             match_threshold=class_cfg.matched_threshold,
             unmatch_threshold=class_cfg.unmatched_threshold,
             class_name=class_cfg.class_name,

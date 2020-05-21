@@ -637,18 +637,23 @@ def create_anchors_3d_range(feature_size,
     res = np.transpose(ret, [2, 1, 0, 3, 4, 5])
     return res
 
+
 def create_anchors_3d_sphere_range(feature_size,
                             anchor_range=[0, 70, -0.7853981633974483, +0.7853981633974483],
                             sizes=[1.6, 3.9, 1.56],
                             rotations=[0, np.pi / 2],
+                            exp:bool=False,
                             dtype=np.float32):
     """
+    create polar grid anchors
+
     Args:
         feature_size: list [D, H, W](zyx)
         sizes: [N, 3] list of list or array, size of anchors, xyz
 
         anchor_range: [4], r_min, r_max, phi_min, phi_max
             fix z = -1
+        exp: exponential on radius
 
     Returns:
         anchors: [*feature_size, num_sizes, num_rots, 7] tensor.
@@ -658,8 +663,14 @@ def create_anchors_3d_sphere_range(feature_size,
     #     anchor_range[0], anchor_range[]
     # )
 
-    r_centers = np.linspace(
-        anchor_range[0], anchor_range[1], feature_size[2], dtype=dtype)
+    if exp:
+        r_centers = np.linspace(
+            np.log(anchor_range[0]), np.log(anchor_range[1]), 2*feature_size[2]+1, dtype=dtype)[1::2]
+        r_centers = np.e ** r_centers
+    else:
+        r_centers = np.linspace(
+            anchor_range[0], anchor_range[1], 2*feature_size[2]+1, dtype=dtype)[1::2]
+
     phi_centers = np.linspace(
         anchor_range[2], anchor_range[3], feature_size[1], dtype=dtype)
 
@@ -675,7 +686,7 @@ def create_anchors_3d_sphere_range(feature_size,
     rets = np.meshgrid(
         r_centers, phi_centers, z_centers, rotations, indexing='ij')
 
-    rets[3] += rets[1]
+    rets[3] -= rets[1]
     X = rets[0] * np.cos(rets[1])
     Y = rets[0] * np.sin(rets[1])
     rets[0] = X

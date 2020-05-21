@@ -132,6 +132,7 @@ class AnchorGeneratorSphereRange(AnchorGenerator):
                  match_threshold=-1,
                  unmatch_threshold=-1,
                  custom_values=(),
+                 exp:bool=True,
                  dtype=np.float32):
         super().__init__()
         self._sizes = sizes
@@ -143,6 +144,7 @@ class AnchorGeneratorSphereRange(AnchorGenerator):
         self.match_threshold = match_threshold
         self.unmatch_threshold = unmatch_threshold
         self._custom_values = custom_values
+        self._exp = exp
 
     @property
     def class_name(self):
@@ -158,7 +160,7 @@ class AnchorGeneratorSphereRange(AnchorGenerator):
         print("feautres size", feature_map_size)
         res = box_np_ops.create_anchors_3d_sphere_range(
             feature_map_size, self._anchor_sphere_ranges, self._sizes,
-            self._rotations, self._dtype)
+            self._rotations, self._exp, self._dtype)
         print("res =", res.shape)
 
         if len(self._custom_values) > 0:

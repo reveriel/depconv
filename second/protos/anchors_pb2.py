@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='second.protos',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x1bsecond/protos/anchors.proto\x12\rsecond.protos\"r\n\x15\x41nchorGeneratorStride\x12\r\n\x05sizes\x18\x01 \x03(\x02\x12\x0f\n\x07strides\x18\x02 \x03(\x02\x12\x0f\n\x07offsets\x18\x03 \x03(\x02\x12\x11\n\trotations\x18\x04 \x03(\x02\x12\x15\n\rcustom_values\x18\x05 \x03(\x02\"f\n\x14\x41nchorGeneratorRange\x12\r\n\x05sizes\x18\x01 \x03(\x02\x12\x15\n\ranchor_ranges\x18\x02 \x03(\x02\x12\x11\n\trotations\x18\x03 \x03(\x02\x12\x15\n\rcustom_values\x18\x04 \x03(\x02\"\x8a\x01\n\x1a\x41nchorGeneratorSphereRange\x12\r\n\x05sizes\x18\x01 \x03(\x02\x12\x15\n\ranchor_ranges\x18\x02 \x03(\x02\x12\x1c\n\x14\x61nchor_sphere_ranges\x18\x03 \x03(\x02\x12\x11\n\trotations\x18\x04 \x03(\x02\x12\x15\n\rcustom_values\x18\x05 \x03(\x02\"\n\n\x08NoAnchorb\x06proto3')
+  serialized_pb=_b('\n\x1bsecond/protos/anchors.proto\x12\rsecond.protos\"r\n\x15\x41nchorGeneratorStride\x12\r\n\x05sizes\x18\x01 \x03(\x02\x12\x0f\n\x07strides\x18\x02 \x03(\x02\x12\x0f\n\x07offsets\x18\x03 \x03(\x02\x12\x11\n\trotations\x18\x04 \x03(\x02\x12\x15\n\rcustom_values\x18\x05 \x03(\x02\"f\n\x14\x41nchorGeneratorRange\x12\r\n\x05sizes\x18\x01 \x03(\x02\x12\x15\n\ranchor_ranges\x18\x02 \x03(\x02\x12\x11\n\trotations\x18\x03 \x03(\x02\x12\x15\n\rcustom_values\x18\x04 \x03(\x02\"\x97\x01\n\x1a\x41nchorGeneratorSphereRange\x12\r\n\x05sizes\x18\x01 \x03(\x02\x12\x15\n\ranchor_ranges\x18\x02 \x03(\x02\x12\x1c\n\x14\x61nchor_sphere_ranges\x18\x03 \x03(\x02\x12\x11\n\trotations\x18\x04 \x03(\x02\x12\x15\n\rcustom_values\x18\x05 \x03(\x02\x12\x0b\n\x03\x65xp\x18\x06 \x01(\x08\"\n\n\x08NoAnchorb\x06proto3')
 )
 
 
@@ -179,6 +179,13 @@ _ANCHORGENERATORSPHERERANGE = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='exp', full_name='second.protos.AnchorGeneratorSphereRange.exp', index=5,
+      number=6, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -192,7 +199,7 @@ _ANCHORGENERATORSPHERERANGE = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=267,
-  serialized_end=405,
+  serialized_end=418,
 )
 
 
@@ -215,8 +222,8 @@ _NOANCHOR = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=407,
-  serialized_end=417,
+  serialized_start=420,
+  serialized_end=430,
 )
 
 DESCRIPTOR.message_types_by_name['AnchorGeneratorStride'] = _ANCHORGENERATORSTRIDE
