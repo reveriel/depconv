@@ -37,7 +37,8 @@ def second_box_encode(boxes,
                       anchors,
                       encode_angle_to_vector=False,
                       smooth_dim=False,
-                      cylindrical=False):
+                      sphere=False,
+                      exp=False):
     """box encode for VoxelNet in lidar
     Args:
         boxes ([N, 7 + ?] Tensor): normal boxes: x, y, z, w, l, h, r, custom values
@@ -53,13 +54,28 @@ def second_box_encode(boxes,
         xa, ya, za, wa, la, ha, ra = np.split(anchors, box_ndim, axis=1)
         xg, yg, zg, wg, lg, hg, rg = np.split(boxes, box_ndim, axis=1)
 
-    diagonal = np.sqrt(la**2 + wa**2)  # 4.3
-    xt = (xg - xa) / diagonal
-    yt = (yg - ya) / diagonal
-    zt = (zg - za) / ha  # 1.6
-    lt = np.log(lg / la)
-    wt = np.log(wg / wa)
-    ht = np.log(hg / ha)
+    if not sphere:
+        diagonal = np.sqrt(la**2 + wa**2)  # 4.3
+        xt = (xg - xa) / diagonal
+        yt = (yg - ya) / diagonal
+        zt = (zg - za) / ha  # 1.6
+        lt = np.log(lg / la)
+        wt = np.log(wg / wa)
+        ht = np.log(hg / ha)
+    else:
+        r_a = np.sqrt(xa **2 + ya**2 + za**2)
+        theta_a = np.arccos(za / r_a)
+        phi_a = np.arctan(ya / xa)
+        r_g = np.sqrt(xg **2 + yg**2 + zg**2)
+        theta_g = np.arccos(zg / r_g)
+        phi_g = np.arctan(ya / xa)
+        xt = (np.log(r_g) - np.log(r_a))
+        yt = (theta_g - theta_a)
+        zt = (phi_g - phi_a)
+        lt = np.log(lg / la)
+        wt = np.log(wg / wa)
+        ht = np.log(hg / ha)
+
     rt = rg - ra
     cts = [g - a for g, a in zip(cgs, cas)]
     if smooth_dim:
@@ -87,7 +103,8 @@ def second_box_encode(boxes,
 def second_box_decode(box_encodings,
                       anchors,
                       encode_angle_to_vector=False,
-                      smooth_dim=False):
+                      smooth_dim=False,
+                      sphere=False):
     """box decode for VoxelNet in lidar
     Args:
         boxes ([N, 7] Tensor): normal boxes: x, y, z, w, l, h, r
@@ -109,18 +126,39 @@ def second_box_decode(box_encodings,
         else:
             xt, yt, zt, wt, lt, ht, rt = np.split(box_encodings, box_ndim, axis=-1)
 
-    diagonal = np.sqrt(la**2 + wa**2)
-    xg = xt * diagonal + xa
-    yg = yt * diagonal + ya
-    zg = zt * ha + za
-    if smooth_dim:
-        lg = (lt + 1) * la
-        wg = (wt + 1) * wa
-        hg = (ht + 1) * ha
+    if not sphere:
+        diagonal = np.sqrt(la**2 + wa**2)
+        xg = xt * diagonal + xa
+        yg = yt * diagonal + ya
+        zg = zt * ha + za
+        if smooth_dim:
+            lg = (lt + 1) * la
+            wg = (wt + 1) * wa
+            hg = (ht + 1) * ha
+        else:
+            lg = np.exp(lt) * la
+            wg = np.exp(wt) * wa
+            hg = np.exp(ht) * ha
     else:
-        lg = np.exp(lt) * la
-        wg = np.exp(wt) * wa
-        hg = np.exp(ht) * ha
+        r_a = np.sqrt(xa **2 + ya**2 + za**2)
+        theta_a = np.arccos(za / r_a)
+        phi_a = np.arctan(ya / xa)
+        r_g = np.exp(xt + np.log(r_a))
+        theta_g = yt + theta_a
+        phi_g = zt + phi_a
+        xg = r_g * np.sin(theta_g)  * np.cos(phi_g)
+        yg = r_g * np.sin(theta_g) * np.sin(phi_g)
+        zg = r_g * np.cos(theta_g)
+
+        if smooth_dim:
+            lg = (lt + 1) * la
+            wg = (wt + 1) * wa
+            hg = (ht + 1) * ha
+        else:
+            lg = np.exp(lt) * la
+            wg = np.exp(wt) * wa
+            hg = np.exp(ht) * ha
+
     if encode_angle_to_vector:
         rax = np.cos(ra)
         ray = np.sin(ra)

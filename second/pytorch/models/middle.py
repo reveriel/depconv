@@ -212,6 +212,130 @@ class SpMiddleFHD(nn.Module):
         ret = ret.view(N, C * D, H, W)
         return ret
 
+
+@register_middle
+class SpMiddleFHD_v2(nn.Module):
+    def __init__(self,
+                 output_shape,
+                 use_norm=True,
+                 num_input_features=128,
+                 num_filters_down1=[64],
+                 num_filters_down2=[64, 64],
+                 name='SpMiddleFHD'):
+        super(SpMiddleFHD_v2, self).__init__()
+        self.name = name
+        if use_norm:
+            BatchNorm2d = change_default_args(
+                eps=1e-3, momentum=0.01)(nn.BatchNorm2d)
+            BatchNorm1d = change_default_args(
+                eps=1e-3, momentum=0.01)(nn.BatchNorm1d)
+            Conv2d = change_default_args(bias=False)(nn.Conv2d)
+            SpConv3d = change_default_args(bias=False, use_hash=False)(spconv.SparseConv3d)
+            SubMConv3d = change_default_args(bias=False, use_hash=False)(spconv.SubMConv3d)
+            ConvTranspose2d = change_default_args(bias=False)(
+                nn.ConvTranspose2d)
+        else:
+            BatchNorm2d = Empty
+            BatchNorm1d = Empty
+            Conv2d = change_default_args(bias=True)(nn.Conv2d)
+            SpConv3d = change_default_args(bias=True)(spconv.SparseConv3d)
+            SubMConv3d = change_default_args(bias=True)(spconv.SubMConv3d)
+            ConvTranspose2d = change_default_args(bias=True)(
+                nn.ConvTranspose2d)
+        sparse_shape = np.array(output_shape[1:4]) + [1, 0, 0]
+        # sparse_shape[0] = 11
+        print(sparse_shape)
+        self.sparse_shape = sparse_shape
+        self.voxel_output_shape = output_shape
+        # input: # [1600, 1200, 41]
+        self.middle_conv = spconv.SparseSequential(
+            SubMConv3d(num_input_features, 16, 3, indice_key="subm0"),
+            SparseBasicBlock(16,16, indice_key="subm0"),
+            SpConv3d(16, 32, 3, 2,
+                     padding=1),  # [1600, 1200, 41] -> [800, 600, 21]
+
+            BatchNorm1d(32),
+            nn.ReLU(),
+            SparseBasicBlock(32, 32, indice_key='subm1'),
+            SpConv3d(32, 64, 3, 2,
+                     padding=1),  # [800, 600, 21] -> [400, 300, 11]
+            BatchNorm1d(64),
+            nn.ReLU(),
+            SparseBasicBlock(64, 64, indice_key='subm2'),
+            SpConv3d(64, 64, 3, 2,
+                     padding=[0, 1, 1]),  # [400, 300, 11] -> [200, 150, 5]
+            BatchNorm1d(64),
+            nn.ReLU(),
+            SparseBasicBlock(64, 64, indice_key='subm3'),
+            SpConv3d(64,64, 3, 1, padding=1),
+            BatchNorm1d(64),
+            nn.ReLU(),
+            SparseBasicBlock(64, 64, indice_key='subm4'),
+            SpConv3d(64, 64, (3, 1, 1),
+                     (2, 1, 1)),  # [200, 150, 5] -> [200, 150, 2]
+            BatchNorm1d(64),
+            nn.ReLU(),
+        )
+        self.max_batch_size = 6
+        # self.grid = torch.full([self.max_batch_size, *sparse_shape], -1, dtype=torch.int32).cuda()
+
+    def forward(self, voxel_features, coors, batch_size):
+        # coors[:, 1] += 1
+        print("voxel_features shape: ", voxel_features.shape)
+        print("sparse_shape :", self.sparse_shape)
+        coors = coors.int()
+        ret = spconv.SparseConvTensor(voxel_features, coors, self.sparse_shape,
+                                      batch_size)
+        # t = time.time()
+        # torch.cuda.synchronize()
+        ret = self.middle_conv(ret)
+        # torch.cuda.synchronize()
+        # print("spconv forward time", time.time() - t)
+        ret = ret.dense()
+
+        N, C, D, H, W = ret.shape
+        print("NCDHW = ", N,C,D,H,W)
+        ret = ret.view(N, C * D, H, W)
+        return ret
+
+def conv3x3(in_planes, out_planes, stride=1, indice_key=None):
+    return spconv.SubMConv3d(in_planes, out_planes, kernel_size=3, stride=stride,
+                     padding=1, bias=False, indice_key=indice_key)
+
+def conv1x1(in_planes, out_planes, stride=1, indice_key=None):
+    return spconv.SubMConv3d(in_planes, out_planes, kernel_size=1, stride=stride,
+                     padding=1, bias=False, indice_key=indice_key)
+
+class SparseBasicBlock(spconv.SparseModule):
+
+    expansion = 1
+    def __init__(self, inplanes, planes, stride=1, downsample=None, indice_key=None):
+        super(SparseBasicBlock, self).__init__()
+        self.conv1 = conv3x3(inplanes, planes, stride, indice_key=indice_key)
+        self.bn1 = nn.BatchNorm1d(planes)
+        self.relu = nn.ReLU()
+        self.conv2 = conv3x3(planes, planes, indice_key=indice_key)
+        self.bn2 = nn.BatchNorm1d(planes)
+        self.downsample = downsample
+        self.stride = stride
+
+
+    def forward(self, x):
+        identity = x
+        out = self.conv1(x)
+        out.features = self.bn1(out.features)
+        out.features = self.relu(out.features)
+
+        out = self.conv2(out)
+        out.features = self.bn2(out.features)
+        if self.downsample is not None:
+            identity = self.downsample(x)
+        out.features += identity.features
+        out.features = self.relu(out.features)
+        return out
+
+
+
 @register_middle
 class SpMiddleFHDPeople(nn.Module):
     def __init__(self,

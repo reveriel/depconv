@@ -257,15 +257,15 @@ def prep_pointcloud(input_dict,
         if "group_ids" in gt_dict:
             group_ids = gt_dict["group_ids"]
 
-        # prep.noise_per_object_v3_(
-        #     gt_dict["gt_boxes"],
-        #     points,
-        #     gt_boxes_mask,
-        #     rotation_perturb=gt_rotation_noise,
-        #     center_noise_std=gt_loc_noise_std,
-        #     global_random_rot_range=global_random_rot_range,
-        #     group_ids=group_ids,
-        #     num_try=100)
+        prep.noise_per_object_v3_(
+            gt_dict["gt_boxes"],
+            points,
+            gt_boxes_mask,
+            rotation_perturb=gt_rotation_noise,
+            center_noise_std=gt_loc_noise_std,
+            global_random_rot_range=global_random_rot_range,
+            group_ids=group_ids,
+            num_try=100)
 
         # should remove unrelated objects after noise per object
         # for k, v in gt_dict.items():
@@ -276,13 +276,13 @@ def prep_pointcloud(input_dict,
             dtype=np.int32)
         gt_dict["gt_classes"] = gt_classes
 
-        # gt_dict["gt_boxes"], points = prep.random_flip(gt_dict["gt_boxes"],
-                                                    #    points, 0.5, random_flip_x, random_flip_y)
-        # gt_dict["gt_boxes"], points = prep.global_rotation_v2(
-        #     gt_dict["gt_boxes"], points, *global_rotation_noise)
-        # gt_dict["gt_boxes"], points = prep.global_scaling_v2(
-        #     gt_dict["gt_boxes"], points, *global_scaling_noise)
-        # prep.global_translate_(gt_dict["gt_boxes"], points, global_translate_noise_std)
+        gt_dict["gt_boxes"], points = prep.random_flip(gt_dict["gt_boxes"],
+                                                       points, 0.5, random_flip_x, random_flip_y)
+        gt_dict["gt_boxes"], points = prep.global_rotation_v2(
+            gt_dict["gt_boxes"], points, *global_rotation_noise)
+        gt_dict["gt_boxes"], points = prep.global_scaling_v2(
+            gt_dict["gt_boxes"], points, *global_scaling_noise)
+        prep.global_translate_(gt_dict["gt_boxes"], points, global_translate_noise_std)
         bv_range = voxel_generator.point_cloud_range[[0, 1, 3, 4]]
         mask = prep.filter_gt_box_outside_range_by_center(gt_dict["gt_boxes"], bv_range)
         _dict_select(gt_dict, mask)
