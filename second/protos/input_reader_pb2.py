@@ -317,25 +317,25 @@ _INPUTREADER.fields_by_name['preprocess'].message_type = _INPUTREADER_PREPROCESS
 DESCRIPTOR.message_types_by_name['InputReader'] = _INPUTREADER
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-InputReader = _reflection.GeneratedProtocolMessageType('InputReader', (_message.Message,), dict(
+InputReader = _reflection.GeneratedProtocolMessageType('InputReader', (_message.Message,), {
 
-  Dataset = _reflection.GeneratedProtocolMessageType('Dataset', (_message.Message,), dict(
-    DESCRIPTOR = _INPUTREADER_DATASET,
-    __module__ = 'second.protos.input_reader_pb2'
+  'Dataset' : _reflection.GeneratedProtocolMessageType('Dataset', (_message.Message,), {
+    'DESCRIPTOR' : _INPUTREADER_DATASET,
+    '__module__' : 'second.protos.input_reader_pb2'
     # @@protoc_insertion_point(class_scope:second.protos.InputReader.Dataset)
-    ))
+    })
   ,
 
-  Preprocess = _reflection.GeneratedProtocolMessageType('Preprocess', (_message.Message,), dict(
-    DESCRIPTOR = _INPUTREADER_PREPROCESS,
-    __module__ = 'second.protos.input_reader_pb2'
+  'Preprocess' : _reflection.GeneratedProtocolMessageType('Preprocess', (_message.Message,), {
+    'DESCRIPTOR' : _INPUTREADER_PREPROCESS,
+    '__module__' : 'second.protos.input_reader_pb2'
     # @@protoc_insertion_point(class_scope:second.protos.InputReader.Preprocess)
-    ))
+    })
   ,
-  DESCRIPTOR = _INPUTREADER,
-  __module__ = 'second.protos.input_reader_pb2'
+  'DESCRIPTOR' : _INPUTREADER,
+  '__module__' : 'second.protos.input_reader_pb2'
   # @@protoc_insertion_point(class_scope:second.protos.InputReader)
-  ))
+  })
 _sym_db.RegisterMessage(InputReader)
 _sym_db.RegisterMessage(InputReader.Dataset)
 _sym_db.RegisterMessage(InputReader.Preprocess)

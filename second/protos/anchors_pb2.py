@@ -232,32 +232,32 @@ DESCRIPTOR.message_types_by_name['AnchorGeneratorSphereRange'] = _ANCHORGENERATO
 DESCRIPTOR.message_types_by_name['NoAnchor'] = _NOANCHOR
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-AnchorGeneratorStride = _reflection.GeneratedProtocolMessageType('AnchorGeneratorStride', (_message.Message,), dict(
-  DESCRIPTOR = _ANCHORGENERATORSTRIDE,
-  __module__ = 'second.protos.anchors_pb2'
+AnchorGeneratorStride = _reflection.GeneratedProtocolMessageType('AnchorGeneratorStride', (_message.Message,), {
+  'DESCRIPTOR' : _ANCHORGENERATORSTRIDE,
+  '__module__' : 'second.protos.anchors_pb2'
   # @@protoc_insertion_point(class_scope:second.protos.AnchorGeneratorStride)
-  ))
+  })
 _sym_db.RegisterMessage(AnchorGeneratorStride)
 
-AnchorGeneratorRange = _reflection.GeneratedProtocolMessageType('AnchorGeneratorRange', (_message.Message,), dict(
-  DESCRIPTOR = _ANCHORGENERATORRANGE,
-  __module__ = 'second.protos.anchors_pb2'
+AnchorGeneratorRange = _reflection.GeneratedProtocolMessageType('AnchorGeneratorRange', (_message.Message,), {
+  'DESCRIPTOR' : _ANCHORGENERATORRANGE,
+  '__module__' : 'second.protos.anchors_pb2'
   # @@protoc_insertion_point(class_scope:second.protos.AnchorGeneratorRange)
-  ))
+  })
 _sym_db.RegisterMessage(AnchorGeneratorRange)
 
-AnchorGeneratorSphereRange = _reflection.GeneratedProtocolMessageType('AnchorGeneratorSphereRange', (_message.Message,), dict(
-  DESCRIPTOR = _ANCHORGENERATORSPHERERANGE,
-  __module__ = 'second.protos.anchors_pb2'
+AnchorGeneratorSphereRange = _reflection.GeneratedProtocolMessageType('AnchorGeneratorSphereRange', (_message.Message,), {
+  'DESCRIPTOR' : _ANCHORGENERATORSPHERERANGE,
+  '__module__' : 'second.protos.anchors_pb2'
   # @@protoc_insertion_point(class_scope:second.protos.AnchorGeneratorSphereRange)
-  ))
+  })
 _sym_db.RegisterMessage(AnchorGeneratorSphereRange)
 
-NoAnchor = _reflection.GeneratedProtocolMessageType('NoAnchor', (_message.Message,), dict(
-  DESCRIPTOR = _NOANCHOR,
-  __module__ = 'second.protos.anchors_pb2'
+NoAnchor = _reflection.GeneratedProtocolMessageType('NoAnchor', (_message.Message,), {
+  'DESCRIPTOR' : _NOANCHOR,
+  '__module__' : 'second.protos.anchors_pb2'
   # @@protoc_insertion_point(class_scope:second.protos.NoAnchor)
-  ))
+  })
 _sym_db.RegisterMessage(NoAnchor)
 
 

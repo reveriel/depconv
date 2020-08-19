@@ -463,32 +463,32 @@ _VOXELNET_LOSSNORMTYPE.containing_type = _VOXELNET
 DESCRIPTOR.message_types_by_name['VoxelNet'] = _VOXELNET
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-VoxelNet = _reflection.GeneratedProtocolMessageType('VoxelNet', (_message.Message,), dict(
+VoxelNet = _reflection.GeneratedProtocolMessageType('VoxelNet', (_message.Message,), {
 
-  VoxelFeatureExtractor = _reflection.GeneratedProtocolMessageType('VoxelFeatureExtractor', (_message.Message,), dict(
-    DESCRIPTOR = _VOXELNET_VOXELFEATUREEXTRACTOR,
-    __module__ = 'second.protos.second_pb2'
+  'VoxelFeatureExtractor' : _reflection.GeneratedProtocolMessageType('VoxelFeatureExtractor', (_message.Message,), {
+    'DESCRIPTOR' : _VOXELNET_VOXELFEATUREEXTRACTOR,
+    '__module__' : 'second.protos.second_pb2'
     # @@protoc_insertion_point(class_scope:second.protos.VoxelNet.VoxelFeatureExtractor)
-    ))
+    })
   ,
 
-  MiddleFeatureExtractor = _reflection.GeneratedProtocolMessageType('MiddleFeatureExtractor', (_message.Message,), dict(
-    DESCRIPTOR = _VOXELNET_MIDDLEFEATUREEXTRACTOR,
-    __module__ = 'second.protos.second_pb2'
+  'MiddleFeatureExtractor' : _reflection.GeneratedProtocolMessageType('MiddleFeatureExtractor', (_message.Message,), {
+    'DESCRIPTOR' : _VOXELNET_MIDDLEFEATUREEXTRACTOR,
+    '__module__' : 'second.protos.second_pb2'
     # @@protoc_insertion_point(class_scope:second.protos.VoxelNet.MiddleFeatureExtractor)
-    ))
+    })
   ,
 
-  RPN = _reflection.GeneratedProtocolMessageType('RPN', (_message.Message,), dict(
-    DESCRIPTOR = _VOXELNET_RPN,
-    __module__ = 'second.protos.second_pb2'
+  'RPN' : _reflection.GeneratedProtocolMessageType('RPN', (_message.Message,), {
+    'DESCRIPTOR' : _VOXELNET_RPN,
+    '__module__' : 'second.protos.second_pb2'
     # @@protoc_insertion_point(class_scope:second.protos.VoxelNet.RPN)
-    ))
+    })
   ,
-  DESCRIPTOR = _VOXELNET,
-  __module__ = 'second.protos.second_pb2'
+  'DESCRIPTOR' : _VOXELNET,
+  '__module__' : 'second.protos.second_pb2'
   # @@protoc_insertion_point(class_scope:second.protos.VoxelNet)
-  ))
+  })
 _sym_db.RegisterMessage(VoxelNet)
 _sym_db.RegisterMessage(VoxelNet.VoxelFeatureExtractor)
 _sym_db.RegisterMessage(VoxelNet.MiddleFeatureExtractor)

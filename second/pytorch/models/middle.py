@@ -138,7 +138,7 @@ class SpMiddleFHD(nn.Module):
                 nn.ConvTranspose2d)
         sparse_shape = np.array(output_shape[1:4]) + [1, 0, 0]
         # sparse_shape[0] = 11
-        print(sparse_shape)
+        print("input sparse_shape = ", sparse_shape)
         self.sparse_shape = sparse_shape
         self.voxel_output_shape = output_shape
         # input: # [1600, 1200, 41]
@@ -172,7 +172,7 @@ class SpMiddleFHD(nn.Module):
             SubMConv3d(64, 64, 3, indice_key="subm2"),
             BatchNorm1d(64),
             nn.ReLU(),
-            SpConv3d(64, 64, 3, 2,
+            SpConv3d(64, 64, 3, (2,1,1),
                      padding=[0, 1, 1]),  # [400, 300, 11] -> [200, 150, 5]
             BatchNorm1d(64),
             nn.ReLU(),
@@ -212,7 +212,7 @@ class SpMiddleFHD(nn.Module):
         ret = ret.view(N, C * D, H, W)
         return ret
 
-
+# resnet like structure
 @register_middle
 class SpMiddleFHD_v2(nn.Module):
     def __init__(self,

@@ -180,32 +180,32 @@ DESCRIPTOR.message_types_by_name['DBFilterByDifficulty'] = _DBFILTERBYDIFFICULTY
 DESCRIPTOR.message_types_by_name['DBFilterByMinNumPointInGroundTruth'] = _DBFILTERBYMINNUMPOINTINGROUNDTRUTH
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-DatabasePreprocessingStep = _reflection.GeneratedProtocolMessageType('DatabasePreprocessingStep', (_message.Message,), dict(
-  DESCRIPTOR = _DATABASEPREPROCESSINGSTEP,
-  __module__ = 'second.protos.preprocess_pb2'
+DatabasePreprocessingStep = _reflection.GeneratedProtocolMessageType('DatabasePreprocessingStep', (_message.Message,), {
+  'DESCRIPTOR' : _DATABASEPREPROCESSINGSTEP,
+  '__module__' : 'second.protos.preprocess_pb2'
   # @@protoc_insertion_point(class_scope:second.protos.DatabasePreprocessingStep)
-  ))
+  })
 _sym_db.RegisterMessage(DatabasePreprocessingStep)
 
-DBFilterByDifficulty = _reflection.GeneratedProtocolMessageType('DBFilterByDifficulty', (_message.Message,), dict(
-  DESCRIPTOR = _DBFILTERBYDIFFICULTY,
-  __module__ = 'second.protos.preprocess_pb2'
+DBFilterByDifficulty = _reflection.GeneratedProtocolMessageType('DBFilterByDifficulty', (_message.Message,), {
+  'DESCRIPTOR' : _DBFILTERBYDIFFICULTY,
+  '__module__' : 'second.protos.preprocess_pb2'
   # @@protoc_insertion_point(class_scope:second.protos.DBFilterByDifficulty)
-  ))
+  })
 _sym_db.RegisterMessage(DBFilterByDifficulty)
 
-DBFilterByMinNumPointInGroundTruth = _reflection.GeneratedProtocolMessageType('DBFilterByMinNumPointInGroundTruth', (_message.Message,), dict(
+DBFilterByMinNumPointInGroundTruth = _reflection.GeneratedProtocolMessageType('DBFilterByMinNumPointInGroundTruth', (_message.Message,), {
 
-  MinNumPointPairsEntry = _reflection.GeneratedProtocolMessageType('MinNumPointPairsEntry', (_message.Message,), dict(
-    DESCRIPTOR = _DBFILTERBYMINNUMPOINTINGROUNDTRUTH_MINNUMPOINTPAIRSENTRY,
-    __module__ = 'second.protos.preprocess_pb2'
+  'MinNumPointPairsEntry' : _reflection.GeneratedProtocolMessageType('MinNumPointPairsEntry', (_message.Message,), {
+    'DESCRIPTOR' : _DBFILTERBYMINNUMPOINTINGROUNDTRUTH_MINNUMPOINTPAIRSENTRY,
+    '__module__' : 'second.protos.preprocess_pb2'
     # @@protoc_insertion_point(class_scope:second.protos.DBFilterByMinNumPointInGroundTruth.MinNumPointPairsEntry)
-    ))
+    })
   ,
-  DESCRIPTOR = _DBFILTERBYMINNUMPOINTINGROUNDTRUTH,
-  __module__ = 'second.protos.preprocess_pb2'
+  'DESCRIPTOR' : _DBFILTERBYMINNUMPOINTINGROUNDTRUTH,
+  '__module__' : 'second.protos.preprocess_pb2'
   # @@protoc_insertion_point(class_scope:second.protos.DBFilterByMinNumPointInGroundTruth)
-  ))
+  })
 _sym_db.RegisterMessage(DBFilterByMinNumPointInGroundTruth)
 _sym_db.RegisterMessage(DBFilterByMinNumPointInGroundTruth.MinNumPointPairsEntry)
 

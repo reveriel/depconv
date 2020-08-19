@@ -184,32 +184,32 @@ DESCRIPTOR.message_types_by_name['NearestIouSimilarity'] = _NEARESTIOUSIMILARITY
 DESCRIPTOR.message_types_by_name['DistanceSimilarity'] = _DISTANCESIMILARITY
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-RegionSimilarityCalculator = _reflection.GeneratedProtocolMessageType('RegionSimilarityCalculator', (_message.Message,), dict(
-  DESCRIPTOR = _REGIONSIMILARITYCALCULATOR,
-  __module__ = 'second.protos.similarity_pb2'
+RegionSimilarityCalculator = _reflection.GeneratedProtocolMessageType('RegionSimilarityCalculator', (_message.Message,), {
+  'DESCRIPTOR' : _REGIONSIMILARITYCALCULATOR,
+  '__module__' : 'second.protos.similarity_pb2'
   # @@protoc_insertion_point(class_scope:second.protos.RegionSimilarityCalculator)
-  ))
+  })
 _sym_db.RegisterMessage(RegionSimilarityCalculator)
 
-RotateIouSimilarity = _reflection.GeneratedProtocolMessageType('RotateIouSimilarity', (_message.Message,), dict(
-  DESCRIPTOR = _ROTATEIOUSIMILARITY,
-  __module__ = 'second.protos.similarity_pb2'
+RotateIouSimilarity = _reflection.GeneratedProtocolMessageType('RotateIouSimilarity', (_message.Message,), {
+  'DESCRIPTOR' : _ROTATEIOUSIMILARITY,
+  '__module__' : 'second.protos.similarity_pb2'
   # @@protoc_insertion_point(class_scope:second.protos.RotateIouSimilarity)
-  ))
+  })
 _sym_db.RegisterMessage(RotateIouSimilarity)
 
-NearestIouSimilarity = _reflection.GeneratedProtocolMessageType('NearestIouSimilarity', (_message.Message,), dict(
-  DESCRIPTOR = _NEARESTIOUSIMILARITY,
-  __module__ = 'second.protos.similarity_pb2'
+NearestIouSimilarity = _reflection.GeneratedProtocolMessageType('NearestIouSimilarity', (_message.Message,), {
+  'DESCRIPTOR' : _NEARESTIOUSIMILARITY,
+  '__module__' : 'second.protos.similarity_pb2'
   # @@protoc_insertion_point(class_scope:second.protos.NearestIouSimilarity)
-  ))
+  })
 _sym_db.RegisterMessage(NearestIouSimilarity)
 
-DistanceSimilarity = _reflection.GeneratedProtocolMessageType('DistanceSimilarity', (_message.Message,), dict(
-  DESCRIPTOR = _DISTANCESIMILARITY,
-  __module__ = 'second.protos.similarity_pb2'
+DistanceSimilarity = _reflection.GeneratedProtocolMessageType('DistanceSimilarity', (_message.Message,), {
+  'DESCRIPTOR' : _DISTANCESIMILARITY,
+  '__module__' : 'second.protos.similarity_pb2'
   # @@protoc_insertion_point(class_scope:second.protos.DistanceSimilarity)
-  ))
+  })
 _sym_db.RegisterMessage(DistanceSimilarity)
 
 

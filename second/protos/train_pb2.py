@@ -112,11 +112,11 @@ _TRAINCONFIG.fields_by_name['optimizer'].message_type = second_dot_protos_dot_op
 DESCRIPTOR.message_types_by_name['TrainConfig'] = _TRAINCONFIG
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-TrainConfig = _reflection.GeneratedProtocolMessageType('TrainConfig', (_message.Message,), dict(
-  DESCRIPTOR = _TRAINCONFIG,
-  __module__ = 'second.protos.train_pb2'
+TrainConfig = _reflection.GeneratedProtocolMessageType('TrainConfig', (_message.Message,), {
+  'DESCRIPTOR' : _TRAINCONFIG,
+  '__module__' : 'second.protos.train_pb2'
   # @@protoc_insertion_point(class_scope:second.protos.TrainConfig)
-  ))
+  })
 _sym_db.RegisterMessage(TrainConfig)
 
 

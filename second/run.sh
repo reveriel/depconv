@@ -5,13 +5,13 @@ export PYTHONPATH=$(pwd)/../:$PYTHONPATH
 
 # python3 ./pytorch/train.py train --config_path=./configs/car.fhd.config --model_dir=second1 --resume=True
 
-CUDA_VISIBLE_DEVICES=2 \
+CUDA_VISIBLE_DEVICES=1 \
 python3 ./pytorch/train.py train  \
- --config_path=configs/car.fhd.config --model_dir=depconv47--resume=False \
+ --config_path=configs/car.fhd.config --model_dir=depconv73 --resume=True\
  --multi_gpu=False
 
 #CUDA_VISIBLE_DEVICES=2 python3 ./pytorch/train.py evaluate  \
- #--config_path=configs/car.fhd.config --model_dir=depconv26  
+ #--config_path=configs/car.fhd.config --model_dir=depconv26
 
 # CUDA_VISIBLE_DEVICES=1 python3 ./pytorch/train.py train \
 # --config_path=configs/pointpillars/car/xyres_16.config --model_dir=pp16 --resume=False \
