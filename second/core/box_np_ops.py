@@ -5,6 +5,7 @@ import numpy as np
 from spconv.utils import rbbox_iou, rbbox_intersection
 
 from second.core.geometry import points_in_convex_polygon_3d_jit, points_count_convex_polygon_3d_jit
+from second.core.anchor_centers import range_res2centers
 
 
 def riou_cc(rbboxes, qrbboxes, standup_thresh=0.0):
@@ -686,10 +687,9 @@ def create_anchors_3d_sphere_range(feature_size,
     create polar grid anchors
 
     Args:
-        feature_size: list [D, H, W](zyx)
-        sizes: [N, 3] list of list or array, size of anchors, xyz
-
-        anchor_range: [4], r_min, r_max, phi_min, phi_max
+        feature_size: list [D, H, W](zyx) or (theta, phi, logr)
+        sizes: [float], size of anchors, xyz, length should be multiple of 3
+        anchor_range: [float], r0, r1, phi0, phi1, phi in radians
             fix z = -1
         exp: exponential on radius
 
@@ -697,20 +697,27 @@ def create_anchors_3d_sphere_range(feature_size,
         anchors: [*feature_size, num_sizes, num_rots, 7] tensor.
     """
     anchor_range = np.array(anchor_range, dtype)
-    # r_centers = np.linspace(
-    #     anchor_range[0], anchor_range[]
-    # )
 
     if exp:
-        r_centers = np.linspace(
-            np.log(anchor_range[0]), np.log(anchor_range[1]), 2*feature_size[2]+1, dtype=dtype)[1::2]
-        r_centers = np.e ** r_centers
+        # r_centers = np.linspace(
+        #     np.log(anchor_range[0]), np.log(anchor_range[1]), 2*feature_size[2]+1, dtype=dtype)[1::2]
+        logr_center = range_res2centers([np.log(anchor_range[0]),
+                                        np.log(anchor_range[1])], feature_size[2] * 4)\
+                                        .conv(3,2,1).conv(3,2,1).conv(3,1,1)
+        logr_centers = np.linspace(logr_center.start,
+                                   logr_center.start + logr_center.delta * logr_center.num,
+                                   logr_center.num, dtype=dtype)
+        r_centers = np.e ** logr_centers
     else:
-        r_centers = np.linspace(
-            anchor_range[0], anchor_range[1], 2*feature_size[2]+1, dtype=dtype)[1::2]
+        raise NotImplementedError
 
-    phi_centers = np.linspace(
-        anchor_range[2], anchor_range[3], feature_size[1], dtype=dtype)
+    # phi_centers = np.linspace(
+    #     anchor_range[2], anchor_range[3], feature_size[1], dtype=dtype)
+    phi_center = range_res2centers([anchor_range[2], anchor_range[3]], feature_size[1] * 4)\
+                    .conv(3,2,1).conv(3,2,1).conv(3,1,1)
+    phi_centers = np.linspace(phi_center.start,
+                               phi_center.start + phi_center.delta * phi_center.num ,
+                               phi_center.num , dtype=dtype)
 
     z_centers = np.linspace( -1 , -1, 1, dtype=dtype)
     # y_centers = np.linspace(
@@ -724,7 +731,7 @@ def create_anchors_3d_sphere_range(feature_size,
     rets = np.meshgrid(
         r_centers, phi_centers, z_centers, rotations, indexing='ij')
 
-    rets[3] -= rets[1]
+    rets[3] -= rets[1] # rotation
     X = rets[0] * np.cos(rets[1])
     Y = rets[0] * np.sin(rets[1])
     rets[0] = X
