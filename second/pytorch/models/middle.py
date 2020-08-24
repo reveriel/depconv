@@ -172,7 +172,7 @@ class SpMiddleFHD(nn.Module):
             SubMConv3d(64, 64, 3, indice_key="subm2"),
             BatchNorm1d(64),
             nn.ReLU(),
-            SpConv3d(64, 64, 3, (2,1,1),
+            SpConv3d(64, 64, 3, (3,1,1),
                      padding=[0, 1, 1]),  # [400, 300, 11] -> [200, 150, 5]
             BatchNorm1d(64),
             nn.ReLU(),
@@ -186,7 +186,7 @@ class SpMiddleFHD(nn.Module):
             BatchNorm1d(64),
             nn.ReLU(),
             SpConv3d(64, 64, (3, 1, 1),
-                     (2, 1, 1)),  # [200, 150, 5] -> [200, 150, 2]
+                     (3, 1, 1)),  # [200, 150, 5] -> [200, 150, 2]
             BatchNorm1d(64),
             nn.ReLU(),
         )
