@@ -134,6 +134,12 @@ class AnchorGeneratorSphereRange(AnchorGenerator):
                  custom_values=(),
                  exp:bool=True,
                  dtype=np.float32):
+        """
+        Args:
+            anchor_ranges: [x0, y0, z0, x1, y1, z1]
+            anchor_sphere_ranges: [r0, r1, phi0, phi1], phi in degrees
+            sizes: [w, l, h]
+        """
         super().__init__()
         self._sizes = sizes
         self._anchor_ranges = anchor_ranges
