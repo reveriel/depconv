@@ -682,6 +682,7 @@ def create_anchors_3d_sphere_range(feature_size,
                             sizes=[1.6, 3.9, 1.56],
                             rotations=[0, np.pi / 2],
                             exp:bool=False,
+                            downsample_factor:int=8,
                             dtype=np.float32):
     """
     create polar grid anchors
@@ -702,8 +703,8 @@ def create_anchors_3d_sphere_range(feature_size,
         # r_centers = np.linspace(
         #     np.log(anchor_range[0]), np.log(anchor_range[1]), 2*feature_size[2]+1, dtype=dtype)[1::2]
         logr_center = range_res2centers([np.log(anchor_range[0]),
-                                        np.log(anchor_range[1])], feature_size[2] * 4)\
-                                        .conv(3,2,1).conv(3,2,1).conv(3,1,1)
+                                        np.log(anchor_range[1])], feature_size[2] * downsample_factor)\
+                                        .conv(3,2,1).conv(3,2,1).conv(3,2,1)
         logr_centers = np.linspace(logr_center.start,
                                    logr_center.start + logr_center.delta * logr_center.num,
                                    logr_center.num, dtype=dtype)
@@ -713,8 +714,8 @@ def create_anchors_3d_sphere_range(feature_size,
 
     # phi_centers = np.linspace(
     #     anchor_range[2], anchor_range[3], feature_size[1], dtype=dtype)
-    phi_center = range_res2centers([anchor_range[2], anchor_range[3]], feature_size[1] * 4)\
-                    .conv(3,2,1).conv(3,2,1).conv(3,1,1)
+    phi_center = range_res2centers([anchor_range[2], anchor_range[3]], feature_size[1] * downsample_factor)\
+                    .conv(3,2,1).conv(3,2,1).conv(3,2,1)
     phi_centers = np.linspace(phi_center.start,
                                phi_center.start + phi_center.delta * phi_center.num ,
                                phi_center.num , dtype=dtype)

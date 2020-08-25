@@ -560,74 +560,74 @@ DESCRIPTOR.message_types_by_name['ExponentialDecay'] = _EXPONENTIALDECAY
 DESCRIPTOR.message_types_by_name['ManualStepping'] = _MANUALSTEPPING
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-Optimizer = _reflection.GeneratedProtocolMessageType('Optimizer', (_message.Message,), {
-  'DESCRIPTOR' : _OPTIMIZER,
-  '__module__' : 'second.protos.optimizer_pb2'
+Optimizer = _reflection.GeneratedProtocolMessageType('Optimizer', (_message.Message,), dict(
+  DESCRIPTOR = _OPTIMIZER,
+  __module__ = 'second.protos.optimizer_pb2'
   # @@protoc_insertion_point(class_scope:second.protos.Optimizer)
-  })
+  ))
 _sym_db.RegisterMessage(Optimizer)
 
-RMSPropOptimizer = _reflection.GeneratedProtocolMessageType('RMSPropOptimizer', (_message.Message,), {
-  'DESCRIPTOR' : _RMSPROPOPTIMIZER,
-  '__module__' : 'second.protos.optimizer_pb2'
+RMSPropOptimizer = _reflection.GeneratedProtocolMessageType('RMSPropOptimizer', (_message.Message,), dict(
+  DESCRIPTOR = _RMSPROPOPTIMIZER,
+  __module__ = 'second.protos.optimizer_pb2'
   # @@protoc_insertion_point(class_scope:second.protos.RMSPropOptimizer)
-  })
+  ))
 _sym_db.RegisterMessage(RMSPropOptimizer)
 
-MomentumOptimizer = _reflection.GeneratedProtocolMessageType('MomentumOptimizer', (_message.Message,), {
-  'DESCRIPTOR' : _MOMENTUMOPTIMIZER,
-  '__module__' : 'second.protos.optimizer_pb2'
+MomentumOptimizer = _reflection.GeneratedProtocolMessageType('MomentumOptimizer', (_message.Message,), dict(
+  DESCRIPTOR = _MOMENTUMOPTIMIZER,
+  __module__ = 'second.protos.optimizer_pb2'
   # @@protoc_insertion_point(class_scope:second.protos.MomentumOptimizer)
-  })
+  ))
 _sym_db.RegisterMessage(MomentumOptimizer)
 
-AdamOptimizer = _reflection.GeneratedProtocolMessageType('AdamOptimizer', (_message.Message,), {
-  'DESCRIPTOR' : _ADAMOPTIMIZER,
-  '__module__' : 'second.protos.optimizer_pb2'
+AdamOptimizer = _reflection.GeneratedProtocolMessageType('AdamOptimizer', (_message.Message,), dict(
+  DESCRIPTOR = _ADAMOPTIMIZER,
+  __module__ = 'second.protos.optimizer_pb2'
   # @@protoc_insertion_point(class_scope:second.protos.AdamOptimizer)
-  })
+  ))
 _sym_db.RegisterMessage(AdamOptimizer)
 
-LearningRate = _reflection.GeneratedProtocolMessageType('LearningRate', (_message.Message,), {
-  'DESCRIPTOR' : _LEARNINGRATE,
-  '__module__' : 'second.protos.optimizer_pb2'
+LearningRate = _reflection.GeneratedProtocolMessageType('LearningRate', (_message.Message,), dict(
+  DESCRIPTOR = _LEARNINGRATE,
+  __module__ = 'second.protos.optimizer_pb2'
   # @@protoc_insertion_point(class_scope:second.protos.LearningRate)
-  })
+  ))
 _sym_db.RegisterMessage(LearningRate)
 
-LearningRatePhase = _reflection.GeneratedProtocolMessageType('LearningRatePhase', (_message.Message,), {
-  'DESCRIPTOR' : _LEARNINGRATEPHASE,
-  '__module__' : 'second.protos.optimizer_pb2'
+LearningRatePhase = _reflection.GeneratedProtocolMessageType('LearningRatePhase', (_message.Message,), dict(
+  DESCRIPTOR = _LEARNINGRATEPHASE,
+  __module__ = 'second.protos.optimizer_pb2'
   # @@protoc_insertion_point(class_scope:second.protos.LearningRatePhase)
-  })
+  ))
 _sym_db.RegisterMessage(LearningRatePhase)
 
-MultiPhase = _reflection.GeneratedProtocolMessageType('MultiPhase', (_message.Message,), {
-  'DESCRIPTOR' : _MULTIPHASE,
-  '__module__' : 'second.protos.optimizer_pb2'
+MultiPhase = _reflection.GeneratedProtocolMessageType('MultiPhase', (_message.Message,), dict(
+  DESCRIPTOR = _MULTIPHASE,
+  __module__ = 'second.protos.optimizer_pb2'
   # @@protoc_insertion_point(class_scope:second.protos.MultiPhase)
-  })
+  ))
 _sym_db.RegisterMessage(MultiPhase)
 
-OneCycle = _reflection.GeneratedProtocolMessageType('OneCycle', (_message.Message,), {
-  'DESCRIPTOR' : _ONECYCLE,
-  '__module__' : 'second.protos.optimizer_pb2'
+OneCycle = _reflection.GeneratedProtocolMessageType('OneCycle', (_message.Message,), dict(
+  DESCRIPTOR = _ONECYCLE,
+  __module__ = 'second.protos.optimizer_pb2'
   # @@protoc_insertion_point(class_scope:second.protos.OneCycle)
-  })
+  ))
 _sym_db.RegisterMessage(OneCycle)
 
-ExponentialDecay = _reflection.GeneratedProtocolMessageType('ExponentialDecay', (_message.Message,), {
-  'DESCRIPTOR' : _EXPONENTIALDECAY,
-  '__module__' : 'second.protos.optimizer_pb2'
+ExponentialDecay = _reflection.GeneratedProtocolMessageType('ExponentialDecay', (_message.Message,), dict(
+  DESCRIPTOR = _EXPONENTIALDECAY,
+  __module__ = 'second.protos.optimizer_pb2'
   # @@protoc_insertion_point(class_scope:second.protos.ExponentialDecay)
-  })
+  ))
 _sym_db.RegisterMessage(ExponentialDecay)
 
-ManualStepping = _reflection.GeneratedProtocolMessageType('ManualStepping', (_message.Message,), {
-  'DESCRIPTOR' : _MANUALSTEPPING,
-  '__module__' : 'second.protos.optimizer_pb2'
+ManualStepping = _reflection.GeneratedProtocolMessageType('ManualStepping', (_message.Message,), dict(
+  DESCRIPTOR = _MANUALSTEPPING,
+  __module__ = 'second.protos.optimizer_pb2'
   # @@protoc_insertion_point(class_scope:second.protos.ManualStepping)
-  })
+  ))
 _sym_db.RegisterMessage(ManualStepping)
 
 

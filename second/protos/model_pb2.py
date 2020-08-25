@@ -68,11 +68,11 @@ _DETECTIONMODEL.fields_by_name['second'].containing_oneof = _DETECTIONMODEL.oneo
 DESCRIPTOR.message_types_by_name['DetectionModel'] = _DETECTIONMODEL
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-DetectionModel = _reflection.GeneratedProtocolMessageType('DetectionModel', (_message.Message,), {
-  'DESCRIPTOR' : _DETECTIONMODEL,
-  '__module__' : 'second.protos.model_pb2'
+DetectionModel = _reflection.GeneratedProtocolMessageType('DetectionModel', (_message.Message,), dict(
+  DESCRIPTOR = _DETECTIONMODEL,
+  __module__ = 'second.protos.model_pb2'
   # @@protoc_insertion_point(class_scope:second.protos.DetectionModel)
-  })
+  ))
 _sym_db.RegisterMessage(DetectionModel)
 
 

@@ -24,6 +24,7 @@ message AnchorGeneratorSphereRange {
   repeated float rotations = 4;
   repeated float custom_values = 5;
   bool exp = 6;
+  int32 downsample_factor = 7;
 }
 
 message NoAnchor {

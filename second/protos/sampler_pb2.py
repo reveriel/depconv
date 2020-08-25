@@ -162,26 +162,26 @@ DESCRIPTOR.message_types_by_name['Group'] = _GROUP
 DESCRIPTOR.message_types_by_name['Sampler'] = _SAMPLER
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-Group = _reflection.GeneratedProtocolMessageType('Group', (_message.Message,), {
+Group = _reflection.GeneratedProtocolMessageType('Group', (_message.Message,), dict(
 
-  'NameToMaxNumEntry' : _reflection.GeneratedProtocolMessageType('NameToMaxNumEntry', (_message.Message,), {
-    'DESCRIPTOR' : _GROUP_NAMETOMAXNUMENTRY,
-    '__module__' : 'second.protos.sampler_pb2'
+  NameToMaxNumEntry = _reflection.GeneratedProtocolMessageType('NameToMaxNumEntry', (_message.Message,), dict(
+    DESCRIPTOR = _GROUP_NAMETOMAXNUMENTRY,
+    __module__ = 'second.protos.sampler_pb2'
     # @@protoc_insertion_point(class_scope:second.protos.Group.NameToMaxNumEntry)
-    })
+    ))
   ,
-  'DESCRIPTOR' : _GROUP,
-  '__module__' : 'second.protos.sampler_pb2'
+  DESCRIPTOR = _GROUP,
+  __module__ = 'second.protos.sampler_pb2'
   # @@protoc_insertion_point(class_scope:second.protos.Group)
-  })
+  ))
 _sym_db.RegisterMessage(Group)
 _sym_db.RegisterMessage(Group.NameToMaxNumEntry)
 
-Sampler = _reflection.GeneratedProtocolMessageType('Sampler', (_message.Message,), {
-  'DESCRIPTOR' : _SAMPLER,
-  '__module__' : 'second.protos.sampler_pb2'
+Sampler = _reflection.GeneratedProtocolMessageType('Sampler', (_message.Message,), dict(
+  DESCRIPTOR = _SAMPLER,
+  __module__ = 'second.protos.sampler_pb2'
   # @@protoc_insertion_point(class_scope:second.protos.Sampler)
-  })
+  ))
 _sym_db.RegisterMessage(Sampler)
 
 

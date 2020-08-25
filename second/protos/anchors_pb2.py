@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='second.protos',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x1bsecond/protos/anchors.proto\x12\rsecond.protos\"r\n\x15\x41nchorGeneratorStride\x12\r\n\x05sizes\x18\x01 \x03(\x02\x12\x0f\n\x07strides\x18\x02 \x03(\x02\x12\x0f\n\x07offsets\x18\x03 \x03(\x02\x12\x11\n\trotations\x18\x04 \x03(\x02\x12\x15\n\rcustom_values\x18\x05 \x03(\x02\"f\n\x14\x41nchorGeneratorRange\x12\r\n\x05sizes\x18\x01 \x03(\x02\x12\x15\n\ranchor_ranges\x18\x02 \x03(\x02\x12\x11\n\trotations\x18\x03 \x03(\x02\x12\x15\n\rcustom_values\x18\x04 \x03(\x02\"\x97\x01\n\x1a\x41nchorGeneratorSphereRange\x12\r\n\x05sizes\x18\x01 \x03(\x02\x12\x15\n\ranchor_ranges\x18\x02 \x03(\x02\x12\x1c\n\x14\x61nchor_sphere_ranges\x18\x03 \x03(\x02\x12\x11\n\trotations\x18\x04 \x03(\x02\x12\x15\n\rcustom_values\x18\x05 \x03(\x02\x12\x0b\n\x03\x65xp\x18\x06 \x01(\x08\"\n\n\x08NoAnchorb\x06proto3')
+  serialized_pb=_b('\n\x1bsecond/protos/anchors.proto\x12\rsecond.protos\"r\n\x15\x41nchorGeneratorStride\x12\r\n\x05sizes\x18\x01 \x03(\x02\x12\x0f\n\x07strides\x18\x02 \x03(\x02\x12\x0f\n\x07offsets\x18\x03 \x03(\x02\x12\x11\n\trotations\x18\x04 \x03(\x02\x12\x15\n\rcustom_values\x18\x05 \x03(\x02\"f\n\x14\x41nchorGeneratorRange\x12\r\n\x05sizes\x18\x01 \x03(\x02\x12\x15\n\ranchor_ranges\x18\x02 \x03(\x02\x12\x11\n\trotations\x18\x03 \x03(\x02\x12\x15\n\rcustom_values\x18\x04 \x03(\x02\"\xb2\x01\n\x1a\x41nchorGeneratorSphereRange\x12\r\n\x05sizes\x18\x01 \x03(\x02\x12\x15\n\ranchor_ranges\x18\x02 \x03(\x02\x12\x1c\n\x14\x61nchor_sphere_ranges\x18\x03 \x03(\x02\x12\x11\n\trotations\x18\x04 \x03(\x02\x12\x15\n\rcustom_values\x18\x05 \x03(\x02\x12\x0b\n\x03\x65xp\x18\x06 \x01(\x08\x12\x19\n\x11\x64ownsample_factor\x18\x07 \x01(\x05\"\n\n\x08NoAnchorb\x06proto3')
 )
 
 
@@ -186,6 +186,13 @@ _ANCHORGENERATORSPHERERANGE = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='downsample_factor', full_name='second.protos.AnchorGeneratorSphereRange.downsample_factor', index=6,
+      number=7, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -199,7 +206,7 @@ _ANCHORGENERATORSPHERERANGE = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=267,
-  serialized_end=418,
+  serialized_end=445,
 )
 
 
@@ -222,8 +229,8 @@ _NOANCHOR = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=420,
-  serialized_end=430,
+  serialized_start=447,
+  serialized_end=457,
 )
 
 DESCRIPTOR.message_types_by_name['AnchorGeneratorStride'] = _ANCHORGENERATORSTRIDE
@@ -232,32 +239,32 @@ DESCRIPTOR.message_types_by_name['AnchorGeneratorSphereRange'] = _ANCHORGENERATO
 DESCRIPTOR.message_types_by_name['NoAnchor'] = _NOANCHOR
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-AnchorGeneratorStride = _reflection.GeneratedProtocolMessageType('AnchorGeneratorStride', (_message.Message,), {
-  'DESCRIPTOR' : _ANCHORGENERATORSTRIDE,
-  '__module__' : 'second.protos.anchors_pb2'
+AnchorGeneratorStride = _reflection.GeneratedProtocolMessageType('AnchorGeneratorStride', (_message.Message,), dict(
+  DESCRIPTOR = _ANCHORGENERATORSTRIDE,
+  __module__ = 'second.protos.anchors_pb2'
   # @@protoc_insertion_point(class_scope:second.protos.AnchorGeneratorStride)
-  })
+  ))
 _sym_db.RegisterMessage(AnchorGeneratorStride)
 
-AnchorGeneratorRange = _reflection.GeneratedProtocolMessageType('AnchorGeneratorRange', (_message.Message,), {
-  'DESCRIPTOR' : _ANCHORGENERATORRANGE,
-  '__module__' : 'second.protos.anchors_pb2'
+AnchorGeneratorRange = _reflection.GeneratedProtocolMessageType('AnchorGeneratorRange', (_message.Message,), dict(
+  DESCRIPTOR = _ANCHORGENERATORRANGE,
+  __module__ = 'second.protos.anchors_pb2'
   # @@protoc_insertion_point(class_scope:second.protos.AnchorGeneratorRange)
-  })
+  ))
 _sym_db.RegisterMessage(AnchorGeneratorRange)
 
-AnchorGeneratorSphereRange = _reflection.GeneratedProtocolMessageType('AnchorGeneratorSphereRange', (_message.Message,), {
-  'DESCRIPTOR' : _ANCHORGENERATORSPHERERANGE,
-  '__module__' : 'second.protos.anchors_pb2'
+AnchorGeneratorSphereRange = _reflection.GeneratedProtocolMessageType('AnchorGeneratorSphereRange', (_message.Message,), dict(
+  DESCRIPTOR = _ANCHORGENERATORSPHERERANGE,
+  __module__ = 'second.protos.anchors_pb2'
   # @@protoc_insertion_point(class_scope:second.protos.AnchorGeneratorSphereRange)
-  })
+  ))
 _sym_db.RegisterMessage(AnchorGeneratorSphereRange)
 
-NoAnchor = _reflection.GeneratedProtocolMessageType('NoAnchor', (_message.Message,), {
-  'DESCRIPTOR' : _NOANCHOR,
-  '__module__' : 'second.protos.anchors_pb2'
+NoAnchor = _reflection.GeneratedProtocolMessageType('NoAnchor', (_message.Message,), dict(
+  DESCRIPTOR = _NOANCHOR,
+  __module__ = 'second.protos.anchors_pb2'
   # @@protoc_insertion_point(class_scope:second.protos.NoAnchor)
-  })
+  ))
 _sym_db.RegisterMessage(NoAnchor)
 
 

@@ -54,7 +54,9 @@ def build(class_cfg):
             match_threshold=class_cfg.matched_threshold,
             unmatch_threshold=class_cfg.unmatched_threshold,
             class_name=class_cfg.class_name,
-            custom_values=list(config.custom_values))
+            custom_values=list(config.custom_values),
+            downsample_factor=int(config.downsample_factor)
+            )
         return ag
     elif ag_type == 'no_anchor':
         return None

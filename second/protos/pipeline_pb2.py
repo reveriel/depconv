@@ -88,11 +88,11 @@ _TRAINEVALPIPELINECONFIG.fields_by_name['eval_input_reader'].message_type = seco
 DESCRIPTOR.message_types_by_name['TrainEvalPipelineConfig'] = _TRAINEVALPIPELINECONFIG
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-TrainEvalPipelineConfig = _reflection.GeneratedProtocolMessageType('TrainEvalPipelineConfig', (_message.Message,), {
-  'DESCRIPTOR' : _TRAINEVALPIPELINECONFIG,
-  '__module__' : 'second.protos.pipeline_pb2'
+TrainEvalPipelineConfig = _reflection.GeneratedProtocolMessageType('TrainEvalPipelineConfig', (_message.Message,), dict(
+  DESCRIPTOR = _TRAINEVALPIPELINECONFIG,
+  __module__ = 'second.protos.pipeline_pb2'
   # @@protoc_insertion_point(class_scope:second.protos.TrainEvalPipelineConfig)
-  })
+  ))
 _sym_db.RegisterMessage(TrainEvalPipelineConfig)
 
 
