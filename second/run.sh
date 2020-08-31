@@ -5,9 +5,9 @@ export PYTHONPATH=$(pwd)/../:$PYTHONPATH
 
 # python3 ./pytorch/train.py train --config_path=./configs/car.fhd.config --model_dir=second1 --resume=True
 
-CUDA_VISIBLE_DEVICES=0 \
+CUDA_VISIBLE_DEVICES=3 \
 python3 ./pytorch/train.py train  \
- --config_path=configs/car.fhd.config --model_dir=depconv92 --resume=False\
+ --config_path=configs/car.fhd.config --model_dir=depconv102 --resume=False\
  --multi_gpu=False
 
 #CUDA_VISIBLE_DEVICES=2 python3 ./pytorch/train.py evaluate  \

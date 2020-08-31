@@ -709,7 +709,12 @@ def create_anchors_3d_sphere_range(feature_size,
                                    logr_center.num, dtype=dtype)
         r_centers = np.e ** logr_centers
     else:
-        raise NotImplementedError
+        r_center = range_res2centers([(anchor_range[0]),
+                                        (anchor_range[1])], feature_size[2] * 4)\
+                                        .conv(3,2,1).conv(3,2,1).conv(3,1,1)
+        r_centers = np.linspace(r_center.start,
+                                   r_center.start + r_center.delta * r_center.num,
+                                   r_center.num, dtype=dtype)
 
     # phi_centers = np.linspace(
     #     anchor_range[2], anchor_range[3], feature_size[1], dtype=dtype)
