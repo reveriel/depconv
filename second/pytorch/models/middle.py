@@ -308,7 +308,7 @@ class SphMiddleFHD(nn.Module):
         # torch.cuda.synchronize()
         # print("spconv forward time", time.time() - t)
         ret = ret.dense()  #- | /
-        ret = ret.permute(0,1,3,2,4).contiguous()
+        ret = ret.permute(0,1,3,4,2).contiguous()
  #  ret =
         N, C, D, H, W = ret.shape
         print("NCDHW = ", N,C,D,H,W)
