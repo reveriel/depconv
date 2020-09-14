@@ -23,6 +23,7 @@ from second.pytorch.builder import (box_coder_builder, input_reader_builder,
 from second.utils.log_tool import SimpleModelLog
 from second.utils.progress_bar import ProgressBar
 import psutil
+import torchprof
 
 def example_convert_to_torch(example, dtype=torch.float32,
                              device=None) -> dict:
@@ -532,20 +533,27 @@ def evaluate(config_path,
     prep_times = []
     t2 = time.time()
 
-    for example in iter(eval_dataloader):
-        if measure_time:
-            prep_times.append(time.time() - t2)
-            torch.cuda.synchronize()
-            t1 = time.time()
-        example = example_convert_to_torch(example, float_dtype)
-        if measure_time:
-            torch.cuda.synchronize()
-            prep_example_times.append(time.time() - t1)
-        with torch.no_grad():
-            detections += net(example)
-        bar.print_bar()
-        if measure_time:
-            t2 = time.time()
+    cnt = 200
+    with torchprof.Profile(net, use_cuda=True) as prof:
+        for example in iter(eval_dataloader):
+            if cnt == 0:
+                break
+            cnt -= 1
+            if measure_time:
+                prep_times.append(time.time() - t2)
+                torch.cuda.synchronize()
+                t1 = time.time()
+            example = example_convert_to_torch(example, float_dtype)
+            if measure_time:
+                torch.cuda.synchronize()
+                prep_example_times.append(time.time() - t1)
+            with torch.no_grad():
+                detections += net(example)
+
+            bar.print_bar()
+            if measure_time:
+                t2 = time.time()
+    print(prof.display())
 
     sec_per_example = len(eval_dataset) / (time.time() - t)
     print(f'generate label finished({sec_per_example:.2f}/s). start eval:')
