@@ -53,6 +53,8 @@ def example_convert_to_torch(example, dtype=torch.float32,
             example_torch[k] = calib
         elif k == "num_voxels":
             example_torch[k] = torch.tensor(v)
+        elif k == "rvoxels":
+            example_torch[k] = v.cuda()
         else:
             example_torch[k] = v
     return example_torch

@@ -19,6 +19,7 @@ from second.sphere.transform import xyz2range
 
 import seaborn as sns
 import matplotlib.pyplot as plt
+import sphconv
 
 def merge_second_batch(batch_list):
     example_merged = defaultdict(list)
@@ -53,8 +54,8 @@ def merge_second_batch(batch_list):
             ret[key] = np.concatenate(coors, axis=0)
         elif key == 'metrics':
             ret[key] = elems
-        elif key in ['points']:
-            continue
+        elif key == 'rvoxels':
+            ret[key] = sphconv.merge_rangevoxel_batch(elems)
         else:
             ret[key] = np.stack(elems, axis=0)
     return ret
@@ -324,6 +325,12 @@ def prep_pointcloud(input_dict,
             num_points = res["num_points_per_voxel"]
             num_voxels = np.array([res["voxel_num"]], dtype=np.int64)
 
+        # if rvoxel_generator:
+        #     rvoxels = rvoxel_generator.generate(points);
+        rvoxels = sphconv.xyz2RangeVoxel(
+            points
+        )
+
     # feature = xyz2range(points)
 
     metrics["voxel_gene_time"] = time.time() - t1
@@ -331,6 +338,7 @@ def prep_pointcloud(input_dict,
     example = {
         'points': points, # for debug
         'voxels': voxels,
+        'rvoxels': rvoxels,
         'num_points': num_points,
         'coordinates': coordinates,
         "num_voxels": num_voxels,

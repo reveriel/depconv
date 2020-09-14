@@ -253,3 +253,16 @@ class SimpleVoxelRadius(nn.Module):
         res = torch.cat([feature, points_mean[:, 2:self.num_input_features]],
                         dim=1)
         return res
+
+@register_vfe
+class EmptyVFE(nn.Module):
+    def __init__(self,
+                 num_input_features=4,
+                 use_norm=True,
+                 name='EmptyVFE',
+                 **kwargs):
+
+        super(EmptyVFE, self).__init__()
+
+    def forward(self, rvoxels):
+        return rvoxels

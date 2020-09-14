@@ -840,3 +840,64 @@ def get_direction_target(anchors,
         dir_cls_targets = torchplus.nn.one_hot(
             dir_cls_targets, num_bins, dtype=anchors.dtype)
     return dir_cls_targets
+
+
+
+
+@register_voxelnet
+class RVoxelNet(VoxelNet):
+    def __init__(self,
+                 output_shape,
+                #  num_class=2,
+                #  num_input_features=4,
+                #  vfe_class_name="EmptyVFE",
+                 name='voxelnet',
+                 **kwargs,
+                 ):
+        super(RVoxelNet, self).__init__(output_shape, name=name, **kwargs)
+
+    def network_forward(self, rvoxels):
+        """this function is used for subclass.
+        you can add custom network architecture by subclass VoxelNet class
+        and override this function.
+        Returns:
+            preds_dict: {
+                box_preds: ...
+                cls_preds: ...
+                dir_cls_preds: ...
+            }
+        """
+        self.start_timer("voxel_feature_extractor")
+        voxel_features = self.voxel_feature_extractor(rvoxels)
+        self.end_timer("voxel_feature_extractor")
+        self.start_timer("middle forward")
+        spatial_features = self.middle_feature_extractor(
+            voxel_features)
+        # spatial_features = self.feature_extractor(feature)
+        self.end_timer("middle forward")
+        self.start_timer("rpn forward")
+        preds_dict = self.rpn(spatial_features)
+        self.end_timer("rpn forward")
+        return preds_dict
+
+    def forward(self, example):
+        """module's forward should always accept dict and return loss.
+        """
+
+        rvoxels = example["rvoxels"]
+        batch_anchors = example["anchors"]
+        batch_size_dev = batch_anchors.shape[0]
+        preds_dict = self.network_forward(rvoxels)
+
+        # need to check size.
+        box_preds = preds_dict["box_preds"].view(batch_size_dev, -1, self._box_coder.code_size)
+        err_msg = f"num_anchors={batch_anchors.shape[1]}, but num_output={box_preds.shape[1]}. please check size"
+        assert batch_anchors.shape[1] == box_preds.shape[1], err_msg
+        if self.training:
+            return self.loss(example, preds_dict)
+        else:
+            self.start_timer("predict")
+            with torch.no_grad():
+                res = self.predict(example, preds_dict)
+            self.end_timer("predict")
+            return res
